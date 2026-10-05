@@ -1,0 +1,549 @@
+// Rha Pilates ERP - ERD
+// 기준: api-spec/openapi.yaml
+// - 시각(timestamp)은 모두 UTC, 날짜(date)와 시각(time)은 센터 현지(Asia/Seoul) 기준이다.
+// - 응답에서 계산되는 값(예약 인원, 결제 합계, 미수금, 결제 상태)은 컬럼으로 두지 않고 각 테이블 Note에 계산 방법을 적었다.
+
+Project rha {
+  database_type: 'PostgreSQL'
+  Note: 'Rha Pilates ERP. 부분 유니크 인덱스(조건부 unique)는 PostgreSQL 기준으로 Note에 적었다.'
+}
+
+// =====================================================================
+// Enums
+// =====================================================================
+
+Enum member_role {
+  ADMIN [note: '관리자 (대표)']
+  INSTRUCTOR [note: '강사']
+  MEMBER [note: '회원']
+}
+
+Enum member_status {
+  ACTIVE [note: '정상']
+  INACTIVE [note: '관리자가 비활성화']
+  WITHDRAWN [note: '본인 탈퇴 (소프트 삭제, ACTIVE로 복구 가능)']
+  RESIGNED [note: '강사 퇴사 (소프트 삭제, ACTIVE로 복구 가능)']
+}
+
+Enum day_of_week {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+Enum lesson_status {
+  CREATED [note: '개설됨 (비공개)']
+  SCHEDULED [note: '공개 예약됨']
+  PUBLISHED [note: '공개됨']
+  UNPUBLISHED [note: '비공개됨']
+  CANCELED [note: '취소됨 (되돌릴 수 없음)']
+}
+
+Enum pass_status {
+  UPCOMING [note: '시작 전']
+  ACTIVE [note: '사용 중']
+  PAUSED [note: '일시정지 중']
+  EXPIRED [note: '만료됨']
+}
+
+Enum payment_method {
+  CARD
+  CASH
+  TRANSFER
+  OTHER
+}
+
+Enum pass_pause_status {
+  SCHEDULED [note: '시작 전']
+  ACTIVE [note: '진행 중']
+  ENDED [note: '종료됨 (기간 만료 또는 조기 해제)']
+  CANCELED [note: '취소됨']
+}
+
+Enum reservation_status {
+  RESERVED [note: '예약됨 (이용권 1회 차감)']
+  ATTENDED [note: '출석']
+  NO_SHOW [note: '노쇼 (차감 유지)']
+  CANCELED [note: '취소됨 (횟수 복구)']
+}
+
+Enum reservation_canceled_by {
+  MEMBER [note: '회원 본인']
+  ADMIN [note: '관리자']
+  LESSON_CANCELED [note: '수업 취소로 인한 자동 취소']
+}
+
+Enum absence_status {
+  REQUESTED [note: '승인 대기']
+  APPROVED [note: '승인됨']
+  REJECTED [note: '반려됨']
+  CANCELED [note: '취소됨']
+}
+
+Enum settlement_status {
+  CALCULATED [note: '계산됨']
+  REVIEW_REQUESTED [note: '검토 요청됨']
+  CONFIRMED [note: '확정됨']
+  PAID [note: '지급 기록됨']
+}
+
+Enum settlement_excluded_reason {
+  NO_RESERVATION [note: '취소되지 않은 예약이 없어 진행되지 않은 수업']
+}
+
+// =====================================================================
+// 회원 / 인증
+// =====================================================================
+
+Table members {
+  id bigint [pk, increment]
+  email varchar(255) [not null, unique, note: '로그인 아이디. 탈퇴한 계정의 이메일도 재사용할 수 없다']
+  password_hash varchar(255) [note: '관리자가 초대한 계정은 비밀번호 설정 전까지 null']
+  name varchar(50) [not null]
+  phone_number varchar(11) [not null, note: '하이픈 없는 휴대폰 번호']
+  birth_date date [not null]
+  address varchar(200)
+  role member_role [not null]
+  status member_status [not null, default: 'ACTIVE']
+  resignation_date date [note: '강사 퇴사일. 등록 전이거나 강사가 아니면 null. ACTIVE로 복구하면 지운다']
+  withdrawn_at timestamp
+  resigned_at timestamp
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Indexes {
+    (role, status)
+    name
+  }
+
+  Note: '회원, 강사, 관리자를 한 테이블에서 역할(role)로 구분한다. 탈퇴와 퇴사는 status로 표시하는 소프트 삭제이다.'
+}
+
+Table refresh_tokens {
+  id bigint [pk, increment]
+  member_id bigint [not null, ref: > members.id]
+  token_hash varchar(255) [not null, unique]
+  expires_at timestamp [not null]
+  revoked_at timestamp [note: '로그아웃, 재발급(회전), 비밀번호 변경, 비활성화 등으로 폐기된 시각']
+  created_at timestamp [not null]
+
+  Indexes {
+    member_id
+  }
+}
+
+Table email_verifications {
+  id bigint [pk, increment]
+  email varchar(255) [not null]
+  code_hash varchar(255) [not null, note: '6자리 인증 코드의 해시']
+  code_expires_at timestamp [not null]
+  verified_at timestamp [note: '코드 확인에 성공한 시각']
+  verification_token_hash varchar(255) [unique, note: '코드 확인 후 발급한 emailVerificationToken의 해시']
+  token_expires_at timestamp
+  used_at timestamp [note: '회원가입에 사용된 시각']
+  created_at timestamp [not null]
+
+  Indexes {
+    email
+  }
+
+  Note: '재요청하면 같은 이메일의 이전 코드는 무효화한다.'
+}
+
+Table password_reset_tokens {
+  id bigint [pk, increment]
+  member_id bigint [not null, ref: > members.id]
+  token_hash varchar(255) [not null, unique]
+  expires_at timestamp [not null]
+  used_at timestamp
+  created_at timestamp [not null]
+
+  Indexes {
+    member_id
+  }
+
+  Note: '비밀번호 재설정과 관리자 초대 메일(최초 비밀번호 설정)이 같은 토큰 흐름을 쓴다.'
+}
+
+Table member_permissions {
+  member_id bigint [not null, ref: > members.id]
+  permission_code varchar(100) [not null, note: 'MEMBER_READ, LESSON_CREATE:{유형코드}, LESSON_UPDATE:{유형코드}']
+  granted_by bigint [not null, ref: > members.id, note: '부여한 관리자']
+  created_at timestamp [not null]
+
+  Indexes {
+    (member_id, permission_code) [pk]
+  }
+
+  Note: '강사에게만 부여한다. 관리자는 암묵적으로 모든 권한을 가지므로 행이 없다. 부여 가능한 권한 목록은 테이블이 아니라 서버가 수업 유형으로부터 만든다.'
+}
+
+// =====================================================================
+// 센터 설정
+// =====================================================================
+
+Table business_hours {
+  day_of_week day_of_week [pk]
+  closed boolean [not null, default: true]
+  open_time time [note: '휴무이면 null']
+  close_time time [note: '휴무이면 null']
+
+  Note: '요일별 1행, 항상 7행. 현지 시각(Asia/Seoul).'
+}
+
+Table reservation_policies {
+  id smallint [pk, note: '단일 행 (항상 1)']
+  cancel_deadline_hours int [not null, note: '수업 시작 몇 시간 전까지 회원이 취소할 수 있는지']
+  allow_unpaid_reservation boolean [not null, default: true, note: '미수 이용권으로 예약 허용 여부']
+  updated_at timestamp [not null]
+}
+
+Table rooms {
+  id bigint [pk, increment]
+  name varchar(50) [not null]
+  capacity int [not null, note: '수용 인원']
+  deleted_at timestamp [note: '삭제 시각. 지난 수업이 참조하므로 소프트 삭제한다']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Note: 'name은 삭제되지 않은 행 사이에서 유일하다 (unique index ... where deleted_at is null).'
+}
+
+Table lesson_types {
+  id bigint [pk, increment]
+  code varchar(30) [not null, unique, note: '영문 식별자, 변경 불가. 권한 코드에 쓰인다']
+  name varchar(50) [not null]
+  capacity int [not null, note: '정원. 수업 개설 시 lessons.capacity로 복사된다']
+  active boolean [not null, default: true]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+// =====================================================================
+// 강사
+// =====================================================================
+
+Table instructor_availabilities {
+  id bigint [pk, increment]
+  instructor_id bigint [not null, ref: > members.id]
+  day_of_week day_of_week [not null]
+  start_time time [not null]
+  end_time time [not null]
+
+  Indexes {
+    (instructor_id, day_of_week)
+  }
+
+  Note: '강사의 요일별 수업 가능 시간대. 한 요일에 여러 행이 가능하며 서로 겹치지 않는다. 현지 시각. 설정 시 강사 단위로 통째로 교체한다.'
+}
+
+Table absences {
+  id bigint [pk, increment]
+  instructor_id bigint [not null, ref: > members.id]
+  start_at timestamp [not null]
+  end_at timestamp [not null]
+  reason varchar(200)
+  status absence_status [not null, default: 'REQUESTED']
+  reject_reason varchar(200)
+  processed_by bigint [ref: > members.id, note: '승인, 반려, 취소를 처리한 사람']
+  processed_at timestamp
+  created_at timestamp [not null]
+
+  Indexes {
+    (instructor_id, start_at)
+    status
+  }
+}
+
+Table pay_rates {
+  instructor_id bigint [not null, ref: > members.id]
+  lesson_type_id bigint [not null, ref: > lesson_types.id]
+  unit_price bigint [not null, note: '수업당 단가 (원)']
+  updated_at timestamp [not null]
+
+  Indexes {
+    (instructor_id, lesson_type_id) [pk]
+  }
+
+  Note: '강사별, 수업 유형별 수업당 단가. 출석 인원과 무관하다.'
+}
+
+// =====================================================================
+// 수업 / 예약
+// =====================================================================
+
+Table lessons {
+  id bigint [pk, increment]
+  title varchar(100) [not null]
+  lesson_type_id bigint [not null, ref: > lesson_types.id, note: '변경 불가']
+  instructor_id bigint [not null, ref: > members.id]
+  room_id bigint [not null, ref: > rooms.id]
+  start_at timestamp [not null]
+  end_at timestamp [not null]
+  capacity int [not null, note: '개설 시점의 수업 유형 정원']
+  status lesson_status [not null, default: 'CREATED']
+  publish_at timestamp [note: '공개 예약 시각. status가 SCHEDULED일 때만 값이 있다']
+  canceled_at timestamp
+  cancel_reason varchar(200)
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Indexes {
+    start_at
+    (instructor_id, start_at)
+    (room_id, start_at)
+    (status, publish_at)
+  }
+
+  Note: 'reservedCount(예약 인원)는 취소되지 않은 reservations 수로 계산한다. 강사, 룸 시간 충돌 검사에서 CANCELED 수업은 제외한다.'
+}
+
+Table reservations {
+  id bigint [pk, increment]
+  lesson_id bigint [not null, ref: > lessons.id]
+  member_id bigint [not null, ref: > members.id]
+  pass_id bigint [not null, ref: > passes.id, note: '차감에 사용한 이용권 (복구 대상)']
+  status reservation_status [not null, default: 'RESERVED']
+  attendance_confirmed_at timestamp [note: '출결을 마지막으로 기록(정정 포함)한 시각']
+  canceled_by reservation_canceled_by
+  canceled_at timestamp
+  cancel_reason varchar(200)
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Indexes {
+    lesson_id
+    (member_id, created_at)
+    pass_id
+  }
+
+  Note: '같은 회원이 같은 수업을 중복 예약할 수 없다 (unique (lesson_id, member_id) where status <> CANCELED).'
+}
+
+// =====================================================================
+// 이용권 / 결제
+// =====================================================================
+
+Table pass_products {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  price bigint [not null, note: '가격 (원)']
+  total_count int [not null, note: '총 횟수']
+  validity_days int [not null, note: '유효 기간 (일)']
+  description varchar(500)
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Note: '발급된 이용권이 하나라도 있으면 삭제할 수 없다.'
+}
+
+Table passes {
+  id bigint [pk, increment]
+  pass_product_id bigint [not null, ref: > pass_products.id]
+  member_id bigint [not null, ref: > members.id]
+  instructor_id bigint [not null, ref: > members.id, note: '담당 강사 (회원마다 다르다)']
+  price bigint [not null, note: '이용권 금액. 발급 시 지정하지 않으면 상품 가격']
+  total_count int [not null, note: '발급 시점 상품 값 복사']
+  remaining_count int [not null, note: '예약 시 1회 차감, 예약 취소 시 복구']
+  start_date date [not null]
+  end_date date [not null, note: '일시정지로 연장된 일수 포함']
+  status pass_status [not null, note: '날짜에 따라 서버(스케줄러)가 전환']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Indexes {
+    (member_id, end_date)
+    instructor_id
+    pass_product_id
+    status
+    created_at
+  }
+
+  Note: '''
+  paidAmount = 해당 이용권 pass_payments.amount 합계 (환불 체크된 기록 포함)
+  unpaidAmount = price - paidAmount
+  paymentStatus = paidAmount 0이고 price > 0이면 UNPAID, 미수금이 남으면 PARTIAL, 아니면 PAID
+  조회 성능이 필요하면 paid_amount를 캐시 컬럼으로 둔다.
+  '''
+}
+
+Table pass_payments {
+  id bigint [pk, increment]
+  pass_id bigint [not null, ref: > passes.id]
+  method payment_method [not null]
+  amount bigint [not null, note: '결제 금액 (원)']
+  paid_at date [not null, note: '결제일 (현지 날짜)']
+  memo varchar(200)
+  refunded boolean [not null, default: false, note: '환불 체크. 이용권, 예약, 미수금은 자동으로 바뀌지 않는다']
+  refunded_at date
+  refund_memo varchar(200)
+  recorded_by bigint [not null, ref: > members.id, note: '기록한 관리자']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Indexes {
+    pass_id
+    paid_at
+    method
+  }
+
+  Note: '오프라인 결제의 기록만 남긴다. 회원은 passes를 통해 연결된다 (passes.member_id).'
+}
+
+Table pass_pauses {
+  id bigint [pk, increment]
+  pass_id bigint [not null, ref: > passes.id]
+  start_date date [not null]
+  end_date date [not null, note: '조기 해제 시 해제 전날로 바뀐다']
+  status pass_pause_status [not null]
+  reason varchar(200)
+  terminated_at timestamp
+  created_by bigint [not null, ref: > members.id]
+  created_at timestamp [not null]
+
+  Indexes {
+    (pass_id, start_date)
+  }
+
+  Note: '등록 시 정지 일수만큼 passes.end_date를 즉시 연장하고, 조기 해제나 취소 시 사용하지 않은 일수만큼 줄인다.'
+}
+
+// =====================================================================
+// 강사 정산
+// =====================================================================
+
+Table settlements {
+  id bigint [pk, increment]
+  instructor_id bigint [not null, ref: > members.id]
+  period_start date [not null]
+  period_end date [not null]
+  status settlement_status [not null, default: 'CALCULATED']
+  total_amount bigint [not null]
+  settled_lesson_count int [not null]
+  excluded_lesson_count int [not null]
+  review_requested_at timestamp
+  confirmed_at timestamp
+  paid_at date [note: '외부 지급일']
+  payment_memo varchar(200)
+  payment_recorded_at timestamp
+  created_at timestamp [not null, note: '계산한 시각']
+
+  Indexes {
+    (instructor_id, period_start)
+    status
+  }
+
+  Note: '같은 강사의 정산 기간은 겹칠 수 없다. 폐기(CALCULATED, REVIEW_REQUESTED에서만)하면 settlement_items와 함께 삭제되어 수업이 풀린다.'
+}
+
+Table settlement_items {
+  id bigint [pk, increment]
+  settlement_id bigint [not null, ref: > settlements.id]
+  lesson_id bigint [not null, unique, ref: > lessons.id, note: '한 수업은 하나의 정산에만 포함된다. 이 행이 있으면 출결 정정 불가 (LESSON_SETTLED)']
+  attended_count int [not null]
+  no_show_count int [not null]
+  unit_price bigint [note: '계산 시점 단가. 미정산이면 null']
+  amount bigint [not null, note: '미정산이면 0']
+  settled boolean [not null]
+  excluded_reason settlement_excluded_reason
+
+  Indexes {
+    settlement_id
+  }
+}
+
+// =====================================================================
+// 알림 / 활동 이력
+// =====================================================================
+
+Table notifications {
+  id bigint [pk, increment]
+  recipient_id bigint [not null, ref: > members.id]
+  type varchar(50) [not null, note: 'LESSON_CANCELED, RESERVATION_CANCELED, ABSENCE_REQUESTED, ABSENCE_APPROVED, ABSENCE_REJECTED 등 (enum으로 고정하지 않음)']
+  title varchar(100) [not null]
+  message varchar(500) [not null]
+  related_type varchar(50) [note: 'LESSON, RESERVATION, ABSENCE 등']
+  related_id bigint
+  read_at timestamp [note: 'null이면 읽지 않음']
+  created_at timestamp [not null]
+
+  Indexes {
+    (recipient_id, created_at)
+    (recipient_id, read_at)
+  }
+}
+
+Table activity_logs {
+  id bigint [pk, increment]
+  occurred_at timestamp [not null]
+  category varchar(50) [not null, note: 'AUTH, MEMBER, LESSON, RESERVATION, PASS, PAYMENT, SETTLEMENT 등']
+  action varchar(100) [not null, note: 'LESSON_UPDATED 등']
+  actor_id bigint [ref: > members.id, note: '시스템 자동 처리, 식별되지 않은 로그인 실패는 null']
+  actor_role member_role [note: '행동 당시 역할 (스냅샷)']
+  subject_member_id bigint [ref: > members.id, note: '영향받은 회원']
+  target_type varchar(50) [note: 'MEMBER, LESSON, PASS, PASS_PAYMENT 등']
+  target_id bigint
+  summary varchar(500) [not null]
+  changes jsonb [not null, default: '[]', note: '[{field, before, after}] 개인정보는 마스킹, 비밀번호와 토큰은 기록하지 않음']
+
+  Indexes {
+    occurred_at
+    (actor_id, occurred_at)
+    (subject_member_id, occurred_at)
+    (target_type, target_id)
+    (category, action)
+  }
+
+  Note: '추가만 하고 수정, 삭제하지 않는다. 업무 변경과 같은 트랜잭션에서 기록한다.'
+}
+
+// =====================================================================
+// 그룹
+// =====================================================================
+
+TableGroup member_auth {
+  members
+  refresh_tokens
+  email_verifications
+  password_reset_tokens
+  member_permissions
+}
+
+TableGroup center_settings {
+  business_hours
+  reservation_policies
+  rooms
+  lesson_types
+}
+
+TableGroup instructor {
+  instructor_availabilities
+  absences
+  pay_rates
+}
+
+TableGroup lesson_reservation {
+  lessons
+  reservations
+}
+
+TableGroup pass_payment {
+  pass_products
+  passes
+  pass_payments
+  pass_pauses
+}
+
+TableGroup settlement {
+  settlements
+  settlement_items
+}
+
+TableGroup log {
+  notifications
+  activity_logs
+}
