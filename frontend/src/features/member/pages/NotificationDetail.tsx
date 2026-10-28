@@ -75,6 +75,11 @@ export function useNotificationDetail(role: UserRole, onNavigate: Navigate) {
   const [selected, setSelected] = useState<api.Notification | null>(null);
   const client = useQueryClient();
   const read = api.useReadNotification();
+  const reservationLink =
+    selected?.relatedType?.toUpperCase() === "RESERVATION" && role !== "MEMBER";
+  const reservation = api.useGetReservation(selected?.relatedId ?? 0, {
+    query: { enabled: !!reservationLink && !!selected?.relatedId },
+  });
 
   const open = async (notification: api.Notification) => {
     try {
@@ -88,7 +93,14 @@ export function useNotificationDetail(role: UserRole, onNavigate: Navigate) {
     }
   };
 
-  const destination = selected && notificationDestination(role, selected);
+  const destination: [Screen, number?] | null = reservationLink
+    ? reservation.data
+      ? [
+          role === "ADMIN" ? "admin-lesson-detail" : "instructor-lesson-detail",
+          reservation.data.lesson.id,
+        ]
+      : null
+    : selected && notificationDestination(role, selected);
   const dialog = selected && (
     <Dialog
       dialog={{
@@ -101,7 +113,14 @@ export function useNotificationDetail(role: UserRole, onNavigate: Navigate) {
       onConfirm={() => {
         if (destination) onNavigate(...destination);
       }}
-    />
+    >
+      {reservationLink && reservation.isPending && (
+        <p className="menu-muted">관련 예약을 확인하는 중입니다.</p>
+      )}
+      {reservationLink && reservation.isError && (
+        <p className="menu-note">관련 예약을 조회할 수 없습니다. 예약 목록에서 확인해 주세요.</p>
+      )}
+    </Dialog>
   );
 
   return { open, dialog };

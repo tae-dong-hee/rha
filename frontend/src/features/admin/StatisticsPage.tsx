@@ -1,4 +1,4 @@
-import { useAllMembers } from "./queries";
+import { useAllMembers, useAllPayments, useAllPasses } from "./queries";
 import * as api from "@/api/generated/api";
 import { MenuPanel } from "@/components/layout/MenuPanel";
 import { AdminPage, QueryState, money } from "./AdminUI";
@@ -300,22 +300,22 @@ export function SalesStatisticsPage() {
   const month = seoulMonth(),
     last = shiftMonth(month, -1),
     lastYear = shiftMonth(month, -12);
-  const current = api.useGetPayments({
+  const current = useAllPayments({
     paidFrom: `${month}-01`,
     paidTo: monthEnd(month),
     size: 100,
   });
-  const previous = api.useGetPayments({
+  const previous = useAllPayments({
     paidFrom: `${last}-01`,
     paidTo: monthEnd(last),
     size: 100,
   });
-  const yearly = api.useGetPayments({
+  const yearly = useAllPayments({
     paidFrom: `${lastYear}-01`,
     paidTo: monthEnd(lastYear),
     size: 100,
   });
-  const refundedPasses = api.useGetPasses({ status: "REFUNDED", size: 100 });
+  const refundedPasses = useAllPasses({ status: "REFUNDED", size: 100 });
   const queries = [current, previous, yearly, refundedPasses];
   const thisRefunds = refunds(refundedPasses, month);
   const thisSales = net(sales(current), thisRefunds),
@@ -386,8 +386,7 @@ export function SalesStatisticsPage() {
           <p className="admin-stats-footnote">
             매출은 결제일이 해당 월인 결제 합계에서 환불일이 해당 월인 이용권 환불 금액을 뺀
             금액입니다. 환불은 환불한 달에 차감되며 지난 달의 매출은 바뀌지 않습니다. 수단별 금액은
-            환불 차감 전 결제 금액이고, 이전 방식으로 환불 표시된 결제 기록은 제외합니다. 결제
-            기록이나 환불 이용권이 한 페이지를 넘으면 집계 불가로 표시합니다.
+            환불 차감 전 결제 금액이고, 이전 방식으로 환불 표시된 결제 기록은 제외합니다.
           </p>
         </div>
       </QueryState>

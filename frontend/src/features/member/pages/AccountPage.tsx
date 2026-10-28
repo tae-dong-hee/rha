@@ -6,6 +6,7 @@ import {
   useChangeMyPassword,
   useGetMyProfile,
   useUpdateMyProfile,
+  useWithdrawMyAccount,
   type MemberUpdateRequest,
 } from "@/api/generated/api";
 import { PageTitle } from "@/components/ui/PageTitle";
@@ -16,6 +17,8 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { todayInSeoul } from "@/api/runtime";
+import { expireSession } from "@/api/session";
+import { ActionDialog } from "@/features/admin/AdminUI";
 
 export function AccountPage({
   canUpdate,
@@ -28,6 +31,8 @@ export function AccountPage({
   const profile = useGetMyProfile();
   const update = useUpdateMyProfile();
   const changePassword = useChangeMyPassword();
+  const withdraw = useWithdrawMyAccount();
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [dialog, setDialog] = useState<"profile" | "password" | null>(null);
   const [form, setForm] = useState({ name: "", phoneNumber: "", birthDate: "", address: "" });
   const [password, setPassword] = useState({ currentPassword: "", newPassword: "" });
@@ -72,6 +77,7 @@ export function AccountPage({
       setPassword({ currentPassword: "", newPassword: "" });
       setDialog(null);
       toast.success("비밀번호를 변경했습니다.");
+      expireSession();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "비밀번호를 변경하지 못했습니다.");
     }
@@ -155,6 +161,39 @@ export function AccountPage({
           <p className="menu-muted">정기적으로 비밀번호를 변경해 계정을 안전하게 보호하세요.</p>
         </div>
       </MenuPanel>
+      <MenuPanel
+        variant="settings"
+        title="회원 탈퇴"
+      >
+        <p className="menu-note">
+          탈퇴하면 남은 이용권을 사용할 수 없으며 같은 이메일로 다시 가입할 수 없습니다. 시작 전
+          예약은 먼저 취소해 주세요.
+        </p>
+        <Button
+          variant="destructive"
+          onClick={() => setWithdrawOpen(true)}
+        >
+          회원 탈퇴
+        </Button>
+      </MenuPanel>
+      {withdrawOpen && (
+        <ActionDialog
+          action={{
+            title: "회원 탈퇴",
+            description:
+              "계정을 탈퇴하고 로그아웃합니다. 이용권·결제 이력은 보존되지만 남은 이용권은 사용할 수 없습니다.",
+            submitLabel: "탈퇴하기",
+            submitVariant: "destructive",
+            danger: true,
+            onSubmit: async () => {
+              await withdraw.mutateAsync();
+              toast.success("회원 탈퇴가 완료되었습니다.");
+              expireSession();
+            },
+          }}
+          onClose={() => setWithdrawOpen(false)}
+        />
+      )}
       {dialog === "profile" && (
         <Dialog
           dialog={{

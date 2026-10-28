@@ -1,4 +1,4 @@
-import { useAllInstructors, useAllPassProducts } from "./queries";
+import { useAllInstructors, useAllMembers, useAllPassProducts } from "./queries";
 import { todayInSeoul, yesterdayInSeoul } from "@/api/runtime";
 import { PAGE_SIZE } from "@/components/ui/Pagination";
 import { useState } from "react";
@@ -56,10 +56,7 @@ export function PassList({ memberId, onNavigate }: { memberId?: number; onNaviga
     page,
     size: PAGE_SIZE,
   });
-  const members = api.useGetMembers(
-      { role: "MEMBER", status: "ACTIVE", size: 100 },
-      { query: { enabled: !memberId } },
-    ),
+  const members = useAllMembers({ role: "MEMBER", status: "ACTIVE" }, !memberId),
     instructors = useAllInstructors({ size: 100 }),
     products = useAllPassProducts({ size: 100 }),
     create = api.useCreatePass();

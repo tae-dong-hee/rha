@@ -24,7 +24,6 @@ import {
   type DashboardLesson,
   type DashboardUser,
 } from "./model";
-import { dashboardPreviewTime } from "./preview";
 import { MemberHomePage } from "./MemberHomePage";
 import { ReservationRoster } from "./ReservationRoster";
 import { NotificationsPage } from "@/features/member/pages/NotificationsPage";
@@ -151,11 +150,7 @@ export function DashboardPage({
   onRecordAttendance,
   empty = false,
 }: Props) {
-  const snapshot = getDashboardSnapshot(
-    data,
-    user,
-    user.role === "MEMBER" ? dashboardPreviewTime : currentTime(),
-  );
+  const snapshot = getDashboardSnapshot(data, user, currentTime());
   const notificationQuery = api.useGetMyNotifications(
     { page: 1, size: 100 },
     {
@@ -461,7 +456,7 @@ export function DashboardPage({
                                   data,
                                   user,
                                   reservation.id,
-                                  dashboardPreviewTime,
+                                  currentTime(),
                                 )}
                                 onRecord={onRecordAttendance}
                               />

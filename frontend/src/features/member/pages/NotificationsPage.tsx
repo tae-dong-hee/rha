@@ -1,3 +1,4 @@
+import { useAllMyNotifications } from "@/features/admin/queries";
 import { useState } from "react";
 import * as api from "@/api/generated/api";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export function NotificationsPage({ role, onNavigate }: { role: UserRole; onNavi
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [action, setAction] = useState<Action | null>(null);
   const detail = useNotificationDetail(role, onNavigate);
-  const query = api.useGetMyNotifications({ page: 1, size: 100 });
+  const query = useAllMyNotifications();
   const unread = api.useGetMyUnreadNotificationCount();
   const readAll = api.useReadAllNotifications();
   const unreadCount = unread.data?.unreadCount ?? 0;

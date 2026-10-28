@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { useGetLessons, useGetMyPasses, useGetMyReservations } from "@/api/generated/api";
+import { useGetLessons, useGetMyReservations } from "@/api/generated/api";
 import {
   Table,
   TableBody,
@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { currentTime } from "@/api/runtime";
+import { useAllMyPasses } from "@/features/admin/queries";
 import { seoulDate, seoulTime } from "./model";
 import { HOME_LESSON_LIMIT, homeLessonStatus, upcomingLessons } from "./homeLessons";
 import { dateInSeoul, timeInSeoul } from "@/features/timetable/model";
@@ -72,7 +73,7 @@ export function MemberHomePage({
   onNavigate: (screen: Screen, id?: number) => void;
   empty?: boolean;
 }) {
-  const passQuery = useGetMyPasses({ page: 1, size: 100 }, { query: { enabled: !empty } });
+  const passQuery = useAllMyPasses({}, !empty);
   const reservedQuery = useGetMyReservations(
     { page: 1, size: 3, status: "RESERVED", order: "ASC" },
     { query: { enabled: !empty } },

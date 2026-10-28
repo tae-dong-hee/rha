@@ -118,3 +118,36 @@ export function useAllLessonReservations(lessonId: number) {
     >(lessonId, { size: 100 }, { query: paging }),
   );
 }
+
+export function useAllMyPasses(params: api.GetMyPassesParams = {}, enabled = true) {
+  return useAllPages<api.PassPageResponse>(
+    api.useGetMyPassesInfinite<InfiniteData<api.PassPageResponse, number | undefined>>(
+      { ...params, size: 100 },
+      { query: { ...paging, enabled } },
+    ),
+  );
+}
+export function useAllMyReservations(params: api.GetMyReservationsParams = {}, enabled = true) {
+  return useAllPages<api.ReservationPageResponse>(
+    api.useGetMyReservationsInfinite<InfiniteData<api.ReservationPageResponse, number | undefined>>(
+      { ...params, size: 100 },
+      { query: { ...paging, enabled } },
+    ),
+  );
+}
+export function useAllMyNotifications() {
+  return useAllPages<api.NotificationPageResponse>(
+    api.useGetMyNotificationsInfinite<
+      InfiniteData<api.NotificationPageResponse, number | undefined>
+    >({ size: 100 }, { query: paging }),
+  );
+}
+
+export function useAllPasses(params: api.GetPassesParams = {}) {
+  return useAllPages<api.PassPageResponse>(
+    api.useGetPassesInfinite<InfiniteData<api.PassPageResponse, number | undefined>>(
+      { ...params, size: 100 },
+      { query: paging },
+    ),
+  );
+}

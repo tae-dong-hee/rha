@@ -2,13 +2,10 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  getGetLessonQueryKey,
-  getGetLessonsInfiniteQueryKey,
-  getGetMyPassesQueryKey,
-  getGetMyReservationsQueryKey,
   useCancelReservation,
   useGetMyReservations,
   useGetReservationPolicy,
+  useGetReservation,
   type Reservation,
 } from "@/api/generated/api";
 import { Dialog } from "@/components/ui/Dialog";
@@ -18,6 +15,7 @@ import { MenuPanel, MenuEmpty } from "@/components/layout/MenuPanel";
 import { SortHeaderButton } from "@/components/ui/SortHeaderButton";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { QueryState, Facts } from "@/features/admin/AdminUI";
 import { seoulDate, seoulTime } from "@/features/dashboard/model";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -32,7 +30,13 @@ import {
 const lessonDate = (item: Reservation) =>
   `${seoulDate(item.lesson.startAt)} ${seoulTime(item.lesson.startAt)}`;
 
-export function ReservationsPage({ canCancel }: { canCancel: boolean }) {
+export function ReservationsPage({
+  canCancel,
+  onOpen,
+}: {
+  canCancel: boolean;
+  onOpen: (id: number) => void;
+}) {
   const client = useQueryClient();
   const [tab, setTab] = useState<"reserved" | "all">("reserved");
   const [page, setPage] = useState(1);
@@ -53,12 +57,7 @@ export function ReservationsPage({ canCancel }: { canCancel: boolean }) {
     if (!cancelTarget) return;
     try {
       await cancel.mutateAsync({ reservationId: cancelTarget.id });
-      await Promise.all([
-        client.invalidateQueries({ queryKey: getGetMyReservationsQueryKey() }),
-        client.invalidateQueries({ queryKey: getGetMyPassesQueryKey() }),
-        client.invalidateQueries({ queryKey: getGetLessonsInfiniteQueryKey() }),
-        client.invalidateQueries({ queryKey: getGetLessonQueryKey(cancelTarget.lesson.id) }),
-      ]);
+      await client.invalidateQueries();
       setCancelTarget(null);
       setPage(1);
       toast.success("예약이 취소되고 이용권 횟수가 복구되었습니다.");
@@ -132,7 +131,12 @@ export function ReservationsPage({ canCancel }: { canCancel: boolean }) {
                       {rows.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell>
-                            <strong>{item.lesson.title}</strong>
+                            <Button
+                              variant="ghost"
+                              onClick={() => onOpen(item.id)}
+                            >
+                              {item.lesson.title}
+                            </Button>
                           </TableCell>
                           <TableCell>{lessonDate(item)}</TableCell>
                           <TableCell>
@@ -217,6 +221,55 @@ export function ReservationsPage({ canCancel }: { canCancel: boolean }) {
           }
         />
       )}
+    </div>
+  );
+}
+
+export function ReservationDetailPage({
+  reservationId,
+  onBack,
+}: {
+  reservationId: number;
+  onBack: () => void;
+}) {
+  const query = useGetReservation(reservationId);
+  const item = query.data;
+  return (
+    <div className="menu-page">
+      <PageTitle
+        title="예약 상세"
+        description="예약한 수업과 출결 상태를 확인합니다."
+        action={
+          <Button
+            variant="outline"
+            onClick={onBack}
+          >
+            내 예약으로
+          </Button>
+        }
+      />
+      <QueryState query={query}>
+        {item && (
+          <MenuPanel
+            title={item.lesson.title}
+            action={
+              <StatusBadge
+                domain="reservation"
+                status={item.status}
+              />
+            }
+          >
+            <Facts
+              items={[
+                ["수업 일시", lessonDate(item)],
+                ["담당 강사", item.lesson.instructor?.name ?? "-"],
+                ["사용 이용권", item.pass.passProduct.name],
+                ["예약 일시", `${seoulDate(item.createdAt)} ${seoulTime(item.createdAt)}`],
+              ]}
+            />
+          </MenuPanel>
+        )}
+      </QueryState>
     </div>
   );
 }

@@ -382,11 +382,11 @@ export function ResignationsPage({ onNavigate }: { onNavigate: Navigate }) {
   // const [handoffInstructor, setHandoffInstructor] = useState<api.Member | null>(null);
   // const [handoffRecipient, setHandoffRecipient] = useState("");
   const query = api.useGetMembers({ role: "INSTRUCTOR", page, size: PAGE_SIZE });
-  // const candidates = useAllInstructors({ size: 100 });
+  const candidates = useAllInstructors({ size: 100 });
   const register = api.useRegisterResignation(),
     cancel = api.useCancelResignation(),
     complete = api.useCompleteResignation();
-  // const reassign = api.useReassignLessons();
+  const reassign = api.useReassignLessons();
   return (
     <AdminPage
       title="퇴사 관리"
@@ -400,12 +400,10 @@ export function ResignationsPage({ onNavigate }: { onNavigate: Navigate }) {
         </Button>
       }
     >
-      {/* 수업 인계 UI 임시 숨김
       <p className="menu-note">
         수업 인계는 즉시 미래 수업의 담당 강사를 변경합니다. 담당 이용권은 자동으로 변경되지
         않으므로 회원 이용권에서 별도로 조정해 주세요.
       </p>
-      */}
       <QueryState query={query}>
         <DataTable
           rows={query.data?.content ?? []}
@@ -479,38 +477,36 @@ export function ResignationsPage({ onNavigate }: { onNavigate: Navigate }) {
                         >
                           퇴사일 {r.resignationDate ? "변경" : "등록"}
                         </DropdownMenuItem>
-                        {/* 수업 인계 실행 UI 임시 숨김
-                          <DropdownMenuItem
-                            disabled={!candidates.data}
-                            onSelect={() =>
-                              setAction({
-                                title: "미래 수업 인계",
-                                description:
-                                  "이후의 시작 전 수업을 모두 인계합니다. 담당 이용권은 유지됩니다.",
-                                submitLabel: "수업 인계",
-                                danger: true,
-                                fields: [
-                                  {
-                                    name: "toInstructorId",
-                                    label: "인계받을 강사",
-                                    type: "search",
-                                    required: true,
-                                    options: options(
-                                      candidates.data?.content.filter((m) => m.id !== r.id),
-                                    ),
-                                  },
-                                ],
-                                onSubmit: (v) =>
-                                  reassign.mutateAsync({
-                                    memberId: r.id,
-                                    data: { toInstructorId: numValue(v, "toInstructorId") },
-                                  }),
-                              })
-                            }
-                          >
-                            수업 인계
-                          </DropdownMenuItem>
-                          */}
+                        <DropdownMenuItem
+                          disabled={!candidates.data}
+                          onSelect={() =>
+                            setAction({
+                              title: "미래 수업 인계",
+                              description:
+                                "이후의 시작 전 수업을 모두 인계합니다. 담당 이용권은 유지됩니다.",
+                              submitLabel: "수업 인계",
+                              danger: true,
+                              fields: [
+                                {
+                                  name: "toInstructorId",
+                                  label: "인계받을 강사",
+                                  type: "search",
+                                  required: true,
+                                  options: options(
+                                    candidates.data?.content.filter((m) => m.id !== r.id),
+                                  ),
+                                },
+                              ],
+                              onSubmit: (v) =>
+                                reassign.mutateAsync({
+                                  memberId: r.id,
+                                  data: { toInstructorId: numValue(v, "toInstructorId") },
+                                }),
+                            })
+                          }
+                        >
+                          수업 인계
+                        </DropdownMenuItem>
                         {r.resignationDate && (
                           <>
                             {/* 인계 대상 등록 UI 임시 숨김

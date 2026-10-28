@@ -13,6 +13,19 @@ export type Permission =
   | "password.change"
   | "notification.read";
 
+// 인증된 계정의 기본 화면 접근. 강사별 추가 업무 권한은 서버의 member permissions로 별도 조회한다.
+export const authenticatedPermissions: ReadonlySet<Permission> = new Set([
+  "lesson.read",
+  "reservation.create",
+  "reservation.cancel",
+  "pass.read",
+  "reservation.read",
+  "profile.read",
+  "profile.update",
+  "password.change",
+  "notification.read",
+]);
+
 type MenuDefinition = {
   screen: string;
   label: string;

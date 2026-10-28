@@ -21,6 +21,10 @@ export default defineConfig({
             "getLessonTypes",
             "getRooms",
             "getPayments",
+            "getMyPasses",
+            "getMyReservations",
+            "getMyNotifications",
+            "getPasses",
           ].map((operation) => [
             operation,
             { query: { useInfinite: true, useInfiniteQueryParam: "page" } },

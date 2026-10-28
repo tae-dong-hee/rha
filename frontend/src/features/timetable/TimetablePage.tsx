@@ -1,17 +1,16 @@
-import { useAllLessons, useAllLessonTypes, useAllRooms } from "@/features/admin/queries";
+import {
+  useAllLessons,
+  useAllLessonTypes,
+  useAllRooms,
+  useAllMyPasses,
+  useAllMyReservations,
+} from "@/features/admin/queries";
 import { LessonEditor } from "@/features/admin/LessonPages";
 import type { Values } from "@/features/admin/AdminUI";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  useCreateReservation,
-  useGetMyPasses,
-  useGetMyReservations,
-  getGetMyReservationsQueryKey,
-  getGetLessonsInfiniteQueryKey,
-  type Lesson,
-} from "@/api/generated/api";
+import { useCreateReservation, type Lesson } from "@/api/generated/api";
 import type { Screen } from "@/config/access";
 import type { DashboardUser } from "@/features/dashboard/model";
 import { MenuEmpty, MenuPanel } from "@/components/layout/MenuPanel";
@@ -328,9 +327,9 @@ function Schedule({
   const catalogRooms = useAllRooms();
   const [reservationDialog, setReservationDialog] = useState<DialogState>(null);
   const range = weekRange(start);
-  const myReservations = useGetMyReservations(
-    { lessonFrom: range.from, lessonTo: range.to, status: "RESERVED", page: 1, size: 100 },
-    { query: { enabled: user.role === "MEMBER" } },
+  const myReservations = useAllMyReservations(
+    { lessonFrom: range.from, lessonTo: range.to, status: "RESERVED" },
+    user.role === "MEMBER",
   );
   const myLessonIds = new Set(
     myReservations.data?.content.map((reservation) => reservation.lesson.id),
@@ -350,10 +349,7 @@ function Schedule({
   const instructors = [
     ...new Map(visibleRows.map((lesson) => [lesson.instructor.id, lesson.instructor])).values(),
   ].sort((a, b) => a.name.localeCompare(b.name, "ko"));
-  const myPasses = useGetMyPasses(
-    { page: 1, size: 100 },
-    { query: { enabled: user.role === "MEMBER" } },
-  );
+  const myPasses = useAllMyPasses({}, user.role === "MEMBER");
   const myInstructor = nextPass(myPasses.data?.content ?? [])?.instructor;
   const instructorOptions = [
     ...new Map(lessons.map((lesson) => [lesson.instructor.id, lesson.instructor])).values(),
@@ -425,18 +421,16 @@ function Schedule({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">전체 수업 상태</SelectItem>
-                {(["CREATED", "PUBLISHED", "UNPUBLISHED", "SCHEDULED", "CANCELED"] as const).filter(
-                  (value) => view !== "calendar" || value !== "CANCELED",
-                ).map(
-                  (value) => (
+                {(["CREATED", "PUBLISHED", "UNPUBLISHED", "SCHEDULED", "CANCELED"] as const)
+                  .filter((value) => view !== "calendar" || value !== "CANCELED")
+                  .map((value) => (
                     <SelectItem
                       key={value}
                       value={value}
                     >
                       {getStatusLabel({ domain: "lesson", status: value })}
                     </SelectItem>
-                  ),
-                )}
+                  ))}
               </SelectContent>
             </Select>
           </Field>
@@ -788,10 +782,7 @@ function Schedule({
             void reserve
               .mutateAsync({ data: { lessonId: selectedLesson.id } })
               .then(async () => {
-                await Promise.all([
-                  client.invalidateQueries({ queryKey: getGetLessonsInfiniteQueryKey() }),
-                  client.invalidateQueries({ queryKey: getGetMyReservationsQueryKey() }),
-                ]);
+                await client.invalidateQueries();
                 toast.success("수업 신청이 완료되었습니다.");
               })
               .catch((error) =>

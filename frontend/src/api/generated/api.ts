@@ -5752,11 +5752,84 @@ export const getPasses = async (params?: GetPassesParams, options?: Parameters<t
 
 
 
+export const getGetPassesInfiniteQueryKey = (params?: GetPassesParams,) => {
+    return [
+    'infinite', `/passes`, ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getGetPassesQueryKey = (params?: GetPassesParams,) => {
     return [
     `/passes`, ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getGetPassesInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getPasses>>, GetPassesParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | InternalServerErrorResponse>(params?: GetPassesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getPasses>>, TError, TData, QueryKey, GetPassesParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPassesInfiniteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPasses>>, QueryKey, GetPassesParams['page']> = ({ signal, pageParam }) => getPasses({...params, 'page': pageParam ?? params?.['page']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getPasses>>, TError, TData, QueryKey, GetPassesParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPassesInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getPasses>>>
+export type GetPassesInfiniteQueryError = BadRequestErrorResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | InternalServerErrorResponse
+
+
+export function useGetPassesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getPasses>>, GetPassesParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | InternalServerErrorResponse>(
+ params: undefined |  GetPassesParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getPasses>>, TError, TData, QueryKey, GetPassesParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPasses>>,
+          TError,
+          Awaited<ReturnType<typeof getPasses>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPassesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getPasses>>, GetPassesParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | InternalServerErrorResponse>(
+ params?: GetPassesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getPasses>>, TError, TData, QueryKey, GetPassesParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPasses>>,
+          TError,
+          Awaited<ReturnType<typeof getPasses>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPassesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getPasses>>, GetPassesParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | InternalServerErrorResponse>(
+ params?: GetPassesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getPasses>>, TError, TData, QueryKey, GetPassesParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 이용권 목록 조회 (관리자)
+ */
+
+export function useGetPassesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getPasses>>, GetPassesParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | InternalServerErrorResponse>(
+ params?: GetPassesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getPasses>>, TError, TData, QueryKey, GetPassesParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPassesInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getGetPassesQueryOptions = <TData = Awaited<ReturnType<typeof getPasses>>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | InternalServerErrorResponse>(params?: GetPassesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPasses>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
@@ -7243,11 +7316,84 @@ export const getMyPasses = async (params?: GetMyPassesParams, options?: Paramete
 
 
 
+export const getGetMyPassesInfiniteQueryKey = (params?: GetMyPassesParams,) => {
+    return [
+    'infinite', `/members/me/passes`, ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getGetMyPassesQueryKey = (params?: GetMyPassesParams,) => {
     return [
     `/members/me/passes`, ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getGetMyPassesInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getMyPasses>>, GetMyPassesParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(params?: GetMyPassesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyPasses>>, TError, TData, QueryKey, GetMyPassesParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyPassesInfiniteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyPasses>>, QueryKey, GetMyPassesParams['page']> = ({ signal, pageParam }) => getMyPasses({...params, 'page': pageParam ?? params?.['page']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyPasses>>, TError, TData, QueryKey, GetMyPassesParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyPassesInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getMyPasses>>>
+export type GetMyPassesInfiniteQueryError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse
+
+
+export function useGetMyPassesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyPasses>>, GetMyPassesParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params: undefined |  GetMyPassesParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyPasses>>, TError, TData, QueryKey, GetMyPassesParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyPasses>>,
+          TError,
+          Awaited<ReturnType<typeof getMyPasses>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyPassesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyPasses>>, GetMyPassesParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params?: GetMyPassesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyPasses>>, TError, TData, QueryKey, GetMyPassesParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyPasses>>,
+          TError,
+          Awaited<ReturnType<typeof getMyPasses>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyPassesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyPasses>>, GetMyPassesParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params?: GetMyPassesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyPasses>>, TError, TData, QueryKey, GetMyPassesParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 내 이용권 목록 조회
+ */
+
+export function useGetMyPassesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyPasses>>, GetMyPassesParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params?: GetMyPassesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyPasses>>, TError, TData, QueryKey, GetMyPassesParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyPassesInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getGetMyPassesQueryOptions = <TData = Awaited<ReturnType<typeof getMyPasses>>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(params?: GetMyPassesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyPasses>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
@@ -8129,11 +8275,84 @@ export const getMyReservations = async (params?: GetMyReservationsParams, option
 
 
 
+export const getGetMyReservationsInfiniteQueryKey = (params?: GetMyReservationsParams,) => {
+    return [
+    'infinite', `/members/me/reservations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getGetMyReservationsQueryKey = (params?: GetMyReservationsParams,) => {
     return [
     `/members/me/reservations`, ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getGetMyReservationsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getMyReservations>>, GetMyReservationsParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(params?: GetMyReservationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyReservations>>, TError, TData, QueryKey, GetMyReservationsParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyReservationsInfiniteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyReservations>>, QueryKey, GetMyReservationsParams['page']> = ({ signal, pageParam }) => getMyReservations({...params, 'page': pageParam ?? params?.['page']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyReservations>>, TError, TData, QueryKey, GetMyReservationsParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyReservationsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getMyReservations>>>
+export type GetMyReservationsInfiniteQueryError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse
+
+
+export function useGetMyReservationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyReservations>>, GetMyReservationsParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params: undefined |  GetMyReservationsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyReservations>>, TError, TData, QueryKey, GetMyReservationsParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyReservations>>,
+          TError,
+          Awaited<ReturnType<typeof getMyReservations>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyReservationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyReservations>>, GetMyReservationsParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params?: GetMyReservationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyReservations>>, TError, TData, QueryKey, GetMyReservationsParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyReservations>>,
+          TError,
+          Awaited<ReturnType<typeof getMyReservations>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyReservationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyReservations>>, GetMyReservationsParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params?: GetMyReservationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyReservations>>, TError, TData, QueryKey, GetMyReservationsParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 내 예약 목록 조회
+ */
+
+export function useGetMyReservationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyReservations>>, GetMyReservationsParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params?: GetMyReservationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyReservations>>, TError, TData, QueryKey, GetMyReservationsParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyReservationsInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getGetMyReservationsQueryOptions = <TData = Awaited<ReturnType<typeof getMyReservations>>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(params?: GetMyReservationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyReservations>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
@@ -8687,11 +8906,84 @@ export const getMyNotifications = async (params?: GetMyNotificationsParams, opti
 
 
 
+export const getGetMyNotificationsInfiniteQueryKey = (params?: GetMyNotificationsParams,) => {
+    return [
+    'infinite', `/notifications`, ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getGetMyNotificationsQueryKey = (params?: GetMyNotificationsParams,) => {
     return [
     `/notifications`, ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getGetMyNotificationsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof getMyNotifications>>, GetMyNotificationsParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(params?: GetMyNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyNotifications>>, TError, TData, QueryKey, GetMyNotificationsParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyNotificationsInfiniteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyNotifications>>, QueryKey, GetMyNotificationsParams['page']> = ({ signal, pageParam }) => getMyNotifications({...params, 'page': pageParam ?? params?.['page']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyNotifications>>, TError, TData, QueryKey, GetMyNotificationsParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyNotificationsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof getMyNotifications>>>
+export type GetMyNotificationsInfiniteQueryError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse
+
+
+export function useGetMyNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyNotifications>>, GetMyNotificationsParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params: undefined |  GetMyNotificationsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyNotifications>>, TError, TData, QueryKey, GetMyNotificationsParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof getMyNotifications>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyNotifications>>, GetMyNotificationsParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params?: GetMyNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyNotifications>>, TError, TData, QueryKey, GetMyNotificationsParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof getMyNotifications>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyNotifications>>, GetMyNotificationsParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params?: GetMyNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyNotifications>>, TError, TData, QueryKey, GetMyNotificationsParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 내 알림 목록 조회
+ */
+
+export function useGetMyNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof getMyNotifications>>, GetMyNotificationsParams['page']>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(
+ params?: GetMyNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof getMyNotifications>>, TError, TData, QueryKey, GetMyNotificationsParams['page']>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyNotificationsInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getGetMyNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof getMyNotifications>>, TError = BadRequestErrorResponse | UnauthorizedErrorResponse | InternalServerErrorResponse>(params?: GetMyNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}

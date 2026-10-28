@@ -44,7 +44,7 @@ import {
   type NavigationItem,
   type Permission,
 } from "../config/access";
-import { currentUser } from "../mocks/member";
+import { authenticatedPermissions } from "../config/access";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -65,10 +65,9 @@ import {
 import { HomePage } from "../features/member/pages/HomePage";
 import { AccountPage } from "../features/member/pages/AccountPage";
 import { LessonDetailPage } from "../features/member/pages/LessonsPage";
-import { dashboardPreview } from "@/features/dashboard/preview";
 import { roleLabels, seoulDate, type DashboardUser } from "@/features/dashboard/model";
 import { PassDetailPage, PassesPage } from "../features/member/pages/PassesPage";
-import { ReservationsPage } from "../features/member/pages/ReservationsPage";
+import { ReservationsPage, ReservationDetailPage } from "../features/member/pages/ReservationsPage";
 import { NOTIFICATION_POLL_MS } from "../features/member/pages/NotificationDetail";
 import { NotificationsPage } from "../features/member/pages/NotificationsPage";
 import type { Screen } from "./routes";
@@ -130,13 +129,7 @@ function App({
   const [selectedId, setSelectedId] = useState(101);
   // 회원이 홈에서 담당 강사 수업으로 이동할 때 시간표에 미리 걸 강사 필터
   const [timetableInstructorId, setTimetableInstructorId] = useState<number>();
-  const [data] = useState(() =>
-    initialHomeView === "empty"
-      ? { lessons: [], reservations: [], absences: [], notifications: [] }
-      : user.role === "INSTRUCTOR"
-        ? { lessons: [], reservations: [], absences: [], notifications: [] }
-        : dashboardPreview,
-  );
+  const data = { lessons: [], reservations: [], absences: [], notifications: [] };
   const [instructorChanges, setInstructorChanges] = useState<AttendanceChange[]>([]);
   const admin = useAdminDashboard(user.role === "ADMIN");
   const viewData = user.role === "ADMIN" && homeView !== "empty" ? admin.data : data;
@@ -144,7 +137,7 @@ function App({
     query: { refetchInterval: NOTIFICATION_POLL_MS },
   });
   const unreadCount = homeView === "empty" ? 0 : (unread.data?.unreadCount ?? 0);
-  const navigation = getNavigation(user.role, currentUser.permissions);
+  const navigation = getNavigation(user.role, authenticatedPermissions);
 
   const onApiAttendanceRecorded = (
     reservation: api.Reservation,
@@ -186,8 +179,7 @@ function App({
       }
       if (next === "absence-requests") next = "absences";
     }
-    if (!canAccessScreen(next, user.role, currentUser.permissions)) return;
-    if (user.role === "MEMBER" && next === "reservation-detail") next = "reservations";
+    if (!canAccessScreen(next, user.role, authenticatedPermissions)) return;
     // 회원 시간표의 id는 수업이 아니라 담당 강사다.
     if (user.role === "MEMBER" && next === "timetable") setTimetableInstructorId(id);
     else if (id !== undefined) setSelectedId(id);
@@ -198,7 +190,7 @@ function App({
   };
 
   const can = (permission: Permission) =>
-    user.role === "MEMBER" && currentUser.permissions.has(permission);
+    user.role === "MEMBER" && authenticatedPermissions.has(permission);
 
   return (
     <SidebarProvider
@@ -239,7 +231,11 @@ function App({
             <InstructorLessonDetail
               lessonId={selectedId}
               user={user}
-              canViewReservations={canAccessScreen("attendees", user.role, currentUser.permissions)}
+              canViewReservations={canAccessScreen(
+                "attendees",
+                user.role,
+                authenticatedPermissions,
+              )}
               changes={instructorChanges}
               onRecorded={onApiAttendanceRecorded}
               onBack={() => go("timetable", selectedId)}
@@ -256,7 +252,11 @@ function App({
               user={user}
               initialLessonId={user.role === "INSTRUCTOR" ? selectedId : 0}
               initialInstructorId={screen === "timetable" ? timetableInstructorId : undefined}
-              canViewReservations={canAccessScreen("attendees", user.role, currentUser.permissions)}
+              canViewReservations={canAccessScreen(
+                "attendees",
+                user.role,
+                authenticatedPermissions,
+              )}
               changes={instructorChanges}
               onRecorded={onApiAttendanceRecorded}
               onNavigate={go}
@@ -613,7 +613,19 @@ function MemberScreen({
         />
       );
     case "reservations":
-      return <ReservationsPage canCancel={canCancel} />;
+      return (
+        <ReservationsPage
+          canCancel={canCancel}
+          onOpen={(id) => onNavigate("reservation-detail", id)}
+        />
+      );
+    case "reservation-detail":
+      return (
+        <ReservationDetailPage
+          reservationId={selectedId}
+          onBack={() => onNavigate("reservations")}
+        />
+      );
     case "profile":
       return (
         <AccountPage
