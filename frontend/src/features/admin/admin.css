@@ -20,6 +20,9 @@
     align-items: center;
     min-width: 0;
   }
+  .admin-page-size[data-slot="select-trigger"] {
+    width: auto;
+  }
   .admin-form {
     display: grid;
     gap: var(--space-detail);
