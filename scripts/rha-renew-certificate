@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source /etc/rha/tls.env
+exec 9>/run/lock/rha-certbot.lock
+flock -n 9 || exit 0
+/usr/local/sbin/rha-certbot renew --non-interactive --quiet --cert-name "$RHA_PUBLIC_IP"
+nginx -t
+systemctl reload nginx
+# Fail the service visibly if a renewal problem leaves less than one day.
+openssl x509 -in "/etc/letsencrypt/live/$RHA_PUBLIC_IP/fullchain.pem" -noout -checkend 86400

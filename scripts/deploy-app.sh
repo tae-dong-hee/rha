@@ -121,7 +121,7 @@ compose() {
 # ==========================================
 
 probe() {
-  local running health ip http_code
+  local running health ip http_code binding
 
   running=$(docker inspect \
     --format '{{.State.Running}}' \
@@ -155,6 +155,11 @@ probe() {
     (( 10#$http_code >= 200 && 10#$http_code < 500 ))
 
   else
+
+    binding=$(docker inspect --format \
+      '{{range (index .NetworkSettings.Ports "80/tcp")}}{{.HostIp}}:{{.HostPort}} {{end}}' \
+      "$CONTAINER" 2>/dev/null || true)
+    [ "$binding" = "127.0.0.1:8080 " ] || return 1
 
     http_code=$(curl -s -o /dev/null \
       -w '%{http_code}' \
@@ -217,10 +222,8 @@ echo "[3/6] Compare image"
 echo "Previous: ${PREVIOUS_IMAGE:-none}"
 echo "New: $NEW_IMAGE"
 
-if [ "$PREVIOUS_IMAGE" = "$NEW_IMAGE" ] && probe; then
-  echo "SKIPPED: Same image and healthy"
-  exit 0
-fi
+# Reconcile Compose even when the image is unchanged: port bindings and other
+# deployment settings may have changed (for example, public -> loopback).
 
 # ==========================================
 # 6. AWS ECR 로그인 및 이미지 Pull

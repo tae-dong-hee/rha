@@ -1,0 +1,35 @@
+server {
+    listen 80 default_server;
+    server_name __PUBLIC_IP__;
+    if ($host != "__PUBLIC_IP__") { return 444; }
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type text/plain;
+        try_files $uri =404;
+    }
+
+    location / {
+        # A fixed authority prevents Host-header open redirects. 308 preserves
+        # the method, body, path and query; clients should call HTTPS directly.
+        return 308 https://__PUBLIC_IP__$request_uri;
+    }
+}
+
+server {
+    # IP-address clients commonly omit SNI, so this must be the default server.
+    listen 443 ssl default_server;
+    server_name __PUBLIC_IP__;
+    if ($host != "__PUBLIC_IP__") { return 444; }
+
+    ssl_certificate /etc/letsencrypt/live/__PUBLIC_IP__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__PUBLIC_IP__/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:RHA_TLS:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    location / {
+        include /etc/nginx/snippets/rha-proxy.conf;
+    }
+}

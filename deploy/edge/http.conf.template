@@ -1,0 +1,16 @@
+# Bootstrap only. Replace with tls.conf.template after certificate issuance.
+server {
+    listen 80 default_server;
+    server_name __PUBLIC_IP__;
+    if ($host != "__PUBLIC_IP__") { return 444; }
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type text/plain;
+        try_files $uri =404;
+    }
+
+    location / {
+        include /etc/nginx/snippets/rha-proxy.conf;
+    }
+}

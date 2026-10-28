@@ -44,6 +44,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify edge and frontend proxy behavior
+        run: python3 scripts/test-edge-proxy.py
+
       # ==========================================
       # 2. VERSION 파일 읽기
       # ==========================================
