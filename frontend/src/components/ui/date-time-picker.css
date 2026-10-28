@@ -3,6 +3,11 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(8rem, 10rem);
     gap: var(--space-control);
+    width: 100%;
+    min-width: 0;
+  }
+  .date-time-picker[data-slot="date-time-picker"] > * {
+    min-width: 0;
   }
   @media (max-width: 479px) {
     .date-time-picker[data-slot="date-time-picker"] {

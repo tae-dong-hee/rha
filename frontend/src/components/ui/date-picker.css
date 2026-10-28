@@ -1,10 +1,16 @@
 @layer utilities {
   .date-picker-trigger[data-slot="date-picker"] {
     width: 100%;
+    min-width: 0;
     justify-content: space-between;
     border-color: var(--input);
     color: var(--foreground);
     font-weight: 400;
+  }
+  .date-picker-trigger > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .date-picker-trigger[data-empty="true"],
   .date-picker-trigger svg {

@@ -452,8 +452,6 @@
     position: fixed;
     top: 50%;
     left: 50%;
-    translate: none;
-    transform: translate(-50%, -50%);
     z-index: 61;
     display: grid;
     gap: var(--menu-gap);
@@ -464,6 +462,9 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-card);
+  }
+  .menu-dialog:not([data-slot="alert-dialog-content"]) {
+    transform: translate(-50%, -50%);
   }
   .menu-dialog-title {
     margin: 0;
