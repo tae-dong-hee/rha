@@ -13,6 +13,7 @@ import {
   ALL,
   options,
   filterValue,
+  money,
   dateTime,
   dayStart,
   dayEnd,
@@ -30,6 +31,19 @@ import {
 } from "@/components/ui/select";
 
 const ACTIVITY_PAGE_SIZES = [20, 50, 100];
+const moneyFields = new Set([
+  "price",
+  "amount",
+  "unitPrice",
+  "totalAmount",
+  "paidAmount",
+  "unpaidAmount",
+  "refundedAmount",
+]);
+const changeValue = (field: string, value?: string | null) =>
+  value != null && moneyFields.has(field) && /^-?\d+$/.test(value)
+    ? money(Number(value))
+    : (value ?? "—");
 
 export function ActivityList({
   targetType,
@@ -268,14 +282,20 @@ export function ActivityList({
                         status: "상태",
                         name: "이름",
                         price: "금액",
+                        amount: "금액",
+                        unitPrice: "단가",
+                        totalAmount: "정산 금액",
+                        paidAmount: "결제 금액",
+                        unpaidAmount: "미수금",
+                        refundedAmount: "환불 금액",
                         permissions: "권한",
                         instructor: "강사",
                         title: "수업명",
                       }) as Record<string, string>
                     )[c.field] ?? c.field,
                 },
-                { label: "변경 전", render: (c) => c.before ?? "—" },
-                { label: "변경 후", render: (c) => c.after ?? "—" },
+                { label: "변경 전", render: (c) => changeValue(c.field, c.before) },
+                { label: "변경 후", render: (c) => changeValue(c.field, c.after) },
               ]}
             />
           </div>

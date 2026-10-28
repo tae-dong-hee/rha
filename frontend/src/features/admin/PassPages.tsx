@@ -35,7 +35,7 @@ const paymentMethods = [
 ];
 const paymentFields: FormField[] = [
   { name: "method", label: "결제 수단", type: "select", required: true, options: paymentMethods },
-  { name: "amount", label: "결제 금액 (원)", type: "number", required: true, min: 1 },
+  { name: "amount", label: "결제 금액 (원)", type: "money", required: true, min: 1 },
   { name: "paidAt", label: "결제일", type: "date", required: true, max: todayInSeoul() },
   { name: "memo", label: "메모", type: "textarea" },
 ];
@@ -98,7 +98,7 @@ export function PassList({ memberId, onNavigate }: { memberId?: number; onNaviga
         {
           name: "price",
           label: "발급 금액 (원)",
-          type: "number",
+          type: "money",
           min: 0,
           description: "비워 두면 선택한 상품 가격으로 발급합니다.",
         },
@@ -415,7 +415,7 @@ export function PassDetail({ id, onNavigate }: { id: number; onNavigate: Navigat
                         {
                           name: "amount",
                           label: "환불 금액 (원)",
-                          type: "number",
+                          type: "money",
                           required: true,
                           min: 1,
                           max: p.paidAmount,

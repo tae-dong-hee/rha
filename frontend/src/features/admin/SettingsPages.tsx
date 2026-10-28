@@ -117,7 +117,7 @@ export function SettingsPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 const productFields: FormField[] = [
   { name: "name", label: "상품명", required: true, maxLength: 100 },
-  { name: "price", label: "가격 (원)", type: "number", required: true, min: 0 },
+  { name: "price", label: "가격 (원)", type: "money", required: true, min: 0 },
   { name: "totalCount", label: "총 횟수", type: "number", required: true, min: 1, max: 1000 },
   {
     name: "validityDays",
@@ -680,10 +680,17 @@ function BusinessHoursSettings() {
         {query.data && (
           <MenuPanel className="admin-hours-form">
             <WeeklyHoursForm
+              layout="business"
               key={JSON.stringify(query.data)}
               initial={weekDays.map((dayOfWeek) => {
                 const hours = query.data!.businessHours.find((h) => h.dayOfWeek === dayOfWeek);
-                return { dayOfWeek, enabled: !!hours && !hours.closed, slots: [{ startTime: hours?.openTime ?? "09:00", endTime: hours?.closeTime ?? "21:00" }] };
+                return {
+                  dayOfWeek,
+                  enabled: !!hours && !hours.closed,
+                  slots: [
+                    { startTime: hours?.openTime ?? "09:00", endTime: hours?.closeTime ?? "21:00" },
+                  ],
+                };
               })}
               submitLabel="영업시간 변경 확인"
               onSubmit={async (days) => {
@@ -749,7 +756,7 @@ function ReservationPolicySettings() {
     <>
       <QueryState query={query}>
         {query.data && (
-          <MenuPanel>
+          <MenuPanel className="admin-setting-policy">
             <AdminForm
               key={JSON.stringify(query.data)}
               fields={[
@@ -801,10 +808,11 @@ function ReservationPolicySettings() {
                   onSubmit: () => save.mutateAsync({ data }),
                 });
               }}
-            />
-            <p className="menu-note">
-              관리자는 회원 취소 마감시간과 관계없이 시작 전 예약을 취소할 수 있습니다.
-            </p>
+            >
+              <p className="admin-setting-policy-note">
+                관리자는 회원 취소 마감시간과 관계없이 시작 전 예약을 취소할 수 있습니다.
+              </p>
+            </AdminForm>
           </MenuPanel>
         )}
       </QueryState>

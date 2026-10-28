@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel, FieldDescription, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import {
@@ -446,6 +447,37 @@ export function AdminForm({
                 disabled={field.disabled}
                 aria-invalid={!!error}
                 aria-describedby={error ? `${id}-error` : undefined}
+              />
+            )}
+          />
+        ) : field.type === "money" ? (
+          <Controller
+            name={field.name}
+            control={control}
+            rules={{
+              required: field.required ? `${field.label}을 입력해 주세요.` : false,
+              validate: (value) => {
+                if (value === "" || value === undefined) return true;
+                const amount = Number(value);
+                if (!Number.isSafeInteger(amount)) return "올바른 금액을 입력해 주세요.";
+                if (field.min !== undefined && amount < Number(field.min)) {
+                  return `${Number(field.min).toLocaleString("ko-KR")}원 이상 입력해 주세요.`;
+                }
+                if (field.max !== undefined && amount > Number(field.max)) {
+                  return `${Number(field.max).toLocaleString("ko-KR")}원 이하로 입력해 주세요.`;
+                }
+                return true;
+              },
+            }}
+            render={({ field: f }) => (
+              <MoneyInput
+                id={id}
+                value={String(f.value ?? "")}
+                onChange={f.onChange}
+                onBlur={f.onBlur}
+                disabled={field.disabled}
+                invalid={!!error}
+                describedBy={error ? `${id}-error` : undefined}
               />
             )}
           />

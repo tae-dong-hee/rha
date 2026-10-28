@@ -1,0 +1,49 @@
+@layer utilities {
+  .month-picker-trigger[data-slot="month-picker"] {
+    width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+    border-color: var(--input);
+    border-radius: var(--radius);
+    color: var(--foreground);
+    font-weight: 400;
+  }
+  .month-picker-trigger svg {
+    color: var(--muted-foreground);
+  }
+  .month-picker-popup[data-slot="popover-content"] {
+    z-index: 100;
+    width: min(18rem, calc(100vw - var(--space-panel)));
+    padding: var(--space-detail);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-panel);
+  }
+  .month-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-control);
+    padding-bottom: var(--space-control);
+    border-bottom: 1px solid var(--border);
+  }
+  .month-picker-year {
+    display: flex;
+    align-items: center;
+    gap: var(--space-control);
+  }
+  .month-picker-year [data-slot="input"] {
+    width: 4.5rem;
+    text-align: center;
+  }
+  .month-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-tight);
+    padding-top: var(--space-control);
+  }
+  .month-picker-grid > button {
+    width: 100%;
+    justify-content: center;
+  }
+}

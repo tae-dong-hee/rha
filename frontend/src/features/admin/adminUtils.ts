@@ -36,6 +36,7 @@ export type FormField = {
     | "datetime-local"
     | "time"
     | "number"
+    | "money"
     | "select"
     | "search"
     | "checkbox"

@@ -315,7 +315,7 @@ function InstructorPayRatesForm({ instructorId, onSaved }: { instructorId: numbe
                 {
                   name: `price-${type.id}`,
                   label: `${type.name} 단가 (원)`,
-                  type: "number" as const,
+                  type: "money" as const,
                   min: 0,
                 },
               ])}

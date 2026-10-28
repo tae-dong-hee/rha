@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { MonthPicker } from "@/components/ui/month-picker";
 import { shiftDate } from "./model";
 
 export function WeekToolbarControls({
@@ -34,17 +34,13 @@ export function WeekToolbarControls({
           >
             조회 월
           </FieldLabel>
-          <Input
+          <MonthPicker
             id={monthId}
-            type="month"
+            label="조회 월"
             value={date.slice(0, 7)}
             min="1900-01"
             max="9998-12"
-            onChange={(event) => {
-              if (event.target.value && event.target.validity.valid) {
-                onChangeDate(`${event.target.value}-01`);
-              }
-            }}
+            onChange={(month) => onChangeDate(`${month}-01`)}
           />
         </Field>
         <p

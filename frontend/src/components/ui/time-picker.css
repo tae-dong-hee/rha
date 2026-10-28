@@ -1,0 +1,57 @@
+@layer utilities {
+  .time-picker-trigger[data-slot="time-picker"] {
+    width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+    border-color: var(--input);
+    border-radius: var(--radius);
+    color: var(--foreground);
+    font-weight: 400;
+  }
+  .time-picker-trigger svg {
+    color: var(--muted-foreground);
+  }
+  .time-picker-popup[data-slot="popover-content"] {
+    z-index: 100;
+    width: min(18rem, calc(100vw - var(--space-panel)));
+    padding: var(--space-detail);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-panel);
+  }
+  .time-picker-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-control);
+    padding-bottom: var(--space-control);
+    border-bottom: 1px solid var(--border);
+  }
+  .time-picker-heading span,
+  .time-picker-column-label {
+    color: var(--muted-foreground);
+    font-size: var(--font-size-caption);
+  }
+  .time-picker-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-detail);
+  }
+  .time-picker-columns > div {
+    display: grid;
+    gap: var(--space-control);
+    min-width: 0;
+  }
+  .time-picker-options {
+    display: grid;
+    align-content: start;
+    gap: var(--space-tight);
+    max-height: 12rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .time-picker-options > button {
+    width: 100%;
+    justify-content: center;
+  }
+}

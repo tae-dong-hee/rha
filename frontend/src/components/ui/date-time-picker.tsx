@@ -1,24 +1,12 @@
 import { useState } from "react";
 import { DatePicker } from "@/components/ui/date-picker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  hourOptions,
-  joinDateTime,
-  minuteOptions,
-  splitDateTime,
-  type DateTimeParts,
-} from "@/lib/date-time";
+import { TimePicker } from "@/components/ui/time-picker";
+import { joinDateTime, splitDateTime, type DateTimeParts } from "@/lib/date-time";
 import "./date-time-picker.css";
 
 /**
  * 네이티브 `input type="datetime-local"`을 대신하는 날짜+시각 선택.
- * 브라우저의 시각 선택(12시간제, 끝없이 반복되는 스크롤) 대신 00~23시와 5분 단위로 고른다.
+ * 날짜는 공통 달력, 시각은 공통 24시간제 선택창에서 고른다.
  */
 function DateTimePicker({
   id,
@@ -60,50 +48,17 @@ function DateTimePicker({
         disabled={disabled}
         {...aria}
       />
-      <Select
-        value={parts.hour}
-        onValueChange={(hour) => update({ hour })}
+      <TimePicker
+        label={`${label} 시각`}
+        value={parts.hour ? `${parts.hour}:${parts.minute || "00"}` : ""}
+        onChange={(time) => {
+          const [hour, minute] = time.split(":");
+          update({ hour, minute });
+        }}
         disabled={disabled}
-      >
-        <SelectTrigger
-          aria-label={`${label} 시`}
-          aria-invalid={aria["aria-invalid"]}
-        >
-          <SelectValue placeholder="시" />
-        </SelectTrigger>
-        <SelectContent className="date-time-picker-popup">
-          {hourOptions().map((hour) => (
-            <SelectItem
-              key={hour}
-              value={hour}
-            >
-              {hour}시
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select
-        value={parts.minute}
-        onValueChange={(minute) => update({ minute })}
-        disabled={disabled}
-      >
-        <SelectTrigger
-          aria-label={`${label} 분`}
-          aria-invalid={aria["aria-invalid"]}
-        >
-          <SelectValue placeholder="분" />
-        </SelectTrigger>
-        <SelectContent className="date-time-picker-popup">
-          {minuteOptions(parts.minute).map((minute) => (
-            <SelectItem
-              key={minute}
-              value={minute}
-            >
-              {minute}분
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        aria-invalid={aria["aria-invalid"]}
+        aria-describedby={aria["aria-describedby"]}
+      />
     </div>
   );
 }
