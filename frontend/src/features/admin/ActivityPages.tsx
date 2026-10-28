@@ -21,6 +21,16 @@ import {
 } from "./AdminUI";
 import type { Navigate } from "./MemberPages";
 import type { Screen } from "@/app/routes";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const ACTIVITY_PAGE_SIZES = [20, 50, 100];
+
 export function ActivityList({
   targetType,
   targetId,
@@ -32,6 +42,8 @@ export function ActivityList({
 }) {
   const [filters, setFilters] = useState<Values>({}),
     [page, setPage] = useState(1),
+    // 활동 이력은 훑어보며 찾는 기록이라 업무 목록(5개)보다 많이 보여준다. 상세 화면 안에 넣은 이력은 5개를 유지한다.
+    [size, setSize] = useState(targetType ? PAGE_SIZE : ACTIVITY_PAGE_SIZES[0]),
     [selected, setSelected] = useState<api.ActivityLog | null>(null);
   const catalog = api.useGetActivityLogActions(),
     members = useAllMembers({ size: 100 });
@@ -49,7 +61,7 @@ export function ActivityList({
     to: dayEnd(textValue(filters, "to")),
     order: filters.order === "ASC" ? "ASC" : "DESC",
     page,
-    size: PAGE_SIZE,
+    size,
   });
   const links: Record<string, Screen> = {
     MEMBER: "admin-member-detail",
@@ -153,6 +165,34 @@ export function ActivityList({
           rows={query.data?.content ?? []}
           pageInfo={query.data?.pageInfo}
           onPage={setPage}
+          action={
+            !targetType && (
+              <Select
+                value={String(size)}
+                onValueChange={(value) => {
+                  setSize(Number(value));
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger
+                  aria-label="페이지당 표시 개수"
+                  className="admin-page-size"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="admin-select-popup">
+                  {ACTIVITY_PAGE_SIZES.map((option) => (
+                    <SelectItem
+                      key={option}
+                      value={String(option)}
+                    >
+                      {option}개씩 보기
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )
+          }
           columns={[
             {
               label: "발생 시각",
