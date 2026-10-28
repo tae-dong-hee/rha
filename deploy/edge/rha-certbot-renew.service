@@ -1,0 +1,11 @@
+[Unit]
+Description=Renew RHA IP certificate and reload host Nginx
+Wants=network-online.target
+After=network-online.target docker.service nginx.service
+Requires=docker.service nginx.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/rha-renew-certificate
+TimeoutStartSec=15min
+UMask=0077

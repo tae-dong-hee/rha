@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Official Certbot 5.8.0, pinned to the image verified during installation.
+IMAGE=certbot/certbot@sha256:f70ad0adbb7e117f0fe42a63c553f28ea451edabc0148757b6efcd9735acaa20
+exec docker run --rm \
+  --mount type=bind,src=/etc/letsencrypt,dst=/etc/letsencrypt \
+  --mount type=bind,src=/var/lib/letsencrypt,dst=/var/lib/letsencrypt \
+  --mount type=bind,src=/var/log/letsencrypt,dst=/var/log/letsencrypt \
+  --mount type=bind,src=/var/www/certbot,dst=/var/www/certbot \
+  "$IMAGE" "$@"
