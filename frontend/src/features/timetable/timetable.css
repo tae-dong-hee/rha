@@ -19,6 +19,10 @@
     color: var(--muted-foreground);
     font-size: var(--font-size-caption);
   }
+  .timetable-page > .timetable-legend {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
   .timetable-legend ul {
     display: flex;
     align-items: center;
@@ -119,16 +123,41 @@
   .timetable-month {
     width: var(--timetable-month-width);
   }
-  .timetable-filters > .menu-actions > [data-slot="field"] {
-    width: auto;
-    min-width: var(--timetable-filter-width);
-  }
   .timetable-page > .timetable-filters {
     grid-column: 1 / -1;
+    container: timetable-filters / inline-size;
+  }
+  .timetable-filters > .menu-actions {
+    display: grid;
+    grid-template-columns: repeat(4, var(--timetable-filter-width));
+    width: 100%;
+  }
+  .timetable-filters > .menu-actions > [data-slot="field"],
+  .timetable-filters [data-slot="select-trigger"] {
+    width: 100%;
+    min-width: 0;
+  }
+  @container timetable-filters (max-width: 38rem) {
+    .timetable-filters > .menu-actions {
+      grid-template-columns: repeat(2, var(--timetable-filter-width));
+    }
+  }
+  @container timetable-filters (max-width: 19rem) {
+    .timetable-filters > .menu-actions {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
   .timetable-preview {
     display: grid;
     gap: var(--menu-gap);
+    min-width: 0;
+  }
+  .timetable-preview > .menu-panel > [data-slot="card-content"] {
+    overflow-x: clip;
+  }
+  .timetable-preview .menu-stack h3,
+  .timetable-preview .menu-facts dt {
+    overflow-wrap: anywhere;
   }
   .timetable-layout[data-view="calendar"]:not([data-editing="true"]) {
     height: calc(
@@ -140,7 +169,7 @@
     --timetable-hour-height: var(--timetable-member-hour-height);
   }
   .timetable-layout[data-view="calendar"]:not([data-editing="true"]) .timetable-preview {
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     min-height: 0;
   }
   .timetable-layout[data-view="calendar"]:not([data-editing="true"])
@@ -155,13 +184,6 @@
     > [data-slot="card-content"] {
     min-height: 0;
     overflow-y: auto;
-  }
-  .timetable-preview .timetable-filters .menu-actions {
-    display: grid;
-    width: 100%;
-  }
-  .timetable-preview .timetable-filters [data-slot="field"] {
-    width: 100%;
   }
   .timetable-preview > .menu-panel:has(.menu-stack > [data-slot="button"]) {
     gap: var(--space-control);
@@ -372,6 +394,7 @@
   }
   .timetable-event {
     position: absolute;
+    height: var(--timetable-event-height);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -418,6 +441,14 @@
     text-overflow: ellipsis;
     flex-shrink: 0;
   }
+  .timetable-event > strong,
+  .timetable-event > span:last-child {
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+    text-overflow: clip;
+  }
   .timetable-event-time {
     font-variant-numeric: tabular-nums;
   }
@@ -440,13 +471,16 @@
   .timetable-event:hover,
   .timetable-event:focus-visible,
   .timetable-event[aria-pressed="true"] {
+    height: auto;
+    min-height: var(--timetable-event-height);
+    overflow: visible;
     background: var(--secondary);
     outline: 2px solid var(--primary);
     outline-offset: calc(-1 * var(--space-tight));
     z-index: 1;
   }
   .timetable-preview .menu-facts > div {
-    grid-template-columns: var(--timetable-fact-width) minmax(0, 1fr);
+    grid-template-columns: minmax(0, var(--timetable-fact-width)) minmax(0, 1fr);
   }
   .timetable-preview [data-slot="badge"] {
     justify-self: start;
@@ -466,7 +500,7 @@
       min-height: 0;
     }
     .timetable-layout[data-view="list"] .timetable-preview {
-      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
       min-height: 0;
     }
     .timetable-layout[data-view="list"] .timetable-preview > .menu-panel {
@@ -475,6 +509,25 @@
     }
   }
   @media (max-width: 1199px) {
+    .timetable-layout[data-view="calendar"]:not([data-editing="true"]) {
+      grid-template-columns: minmax(0, 1fr);
+      height: auto;
+      align-items: start;
+    }
+    .timetable-layout[data-view="calendar"]:not([data-editing="true"]) .timetable-preview {
+      grid-template-rows: auto;
+    }
+    .timetable-layout[data-view="calendar"]:not([data-editing="true"])
+      .timetable-preview
+      > .menu-panel {
+      height: auto;
+    }
+    .timetable-layout[data-view="calendar"]:not([data-editing="true"])
+      .timetable-preview
+      > .menu-panel
+      > [data-slot="card-content"] {
+      overflow-y: visible;
+    }
     .timetable-layout[data-view="list"] {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -488,24 +541,6 @@
     .menu-page.timetable-page,
     .timetable-layout {
       grid-template-columns: minmax(0, 1fr);
-    }
-    .timetable-layout[data-view="calendar"]:not([data-editing="true"]) {
-      height: auto;
-      align-items: start;
-    }
-    .timetable-layout[data-view="calendar"]:not([data-editing="true"]) .timetable-preview {
-      grid-template-rows: auto auto;
-    }
-    .timetable-layout[data-view="calendar"]:not([data-editing="true"])
-      .timetable-preview
-      > .menu-panel {
-      height: auto;
-    }
-    .timetable-layout[data-view="calendar"]:not([data-editing="true"])
-      .timetable-preview
-      > .menu-panel
-      > [data-slot="card-content"] {
-      overflow-y: visible;
     }
     .timetable-toolbar {
       align-items: stretch;

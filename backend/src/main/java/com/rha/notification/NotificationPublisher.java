@@ -41,6 +41,18 @@ public class NotificationPublisher {
         }
     }
 
+    /** 회원 예약을 해당 수업의 담당 강사와 활동 중인 모든 관리자에게 보낸다. */
+    public void reservationCreatedByMember(Reservation reservation, Lesson lesson, String memberName) {
+        String message = memberName + " 회원이 " + TIME.format(lesson.getStartAt()) + " " + lesson.getTitle()
+                + " 수업을 예약했습니다.";
+        send(lesson.getInstructorId(), "RESERVATION_CREATED_BY_MEMBER", "회원이 수업을 예약했습니다", message,
+                "RESERVATION", reservation.getId());
+        for (Member admin : activeAdmins()) {
+            send(admin.getId(), "RESERVATION_CREATED_BY_MEMBER", "회원이 수업을 예약했습니다", message,
+                    "RESERVATION", reservation.getId());
+        }
+    }
+
     /** 관리자가 예약을 취소했을 때 그 회원에게 보낸다. */
     public void reservationCanceledByAdmin(Reservation reservation, Lesson lesson) {
         String message = "관리자가 " + TIME.format(lesson.getStartAt()) + " " + lesson.getTitle()

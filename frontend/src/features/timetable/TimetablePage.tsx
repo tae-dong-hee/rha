@@ -2,7 +2,6 @@ import {
   useAllLessons,
   useAllLessonTypes,
   useAllRooms,
-  useAllMyPasses,
   useAllMyReservations,
 } from "@/features/admin/queries";
 import { LessonEditor } from "@/features/admin/LessonPages";
@@ -38,7 +37,6 @@ import {
 } from "@/components/ui/table";
 import { ApiError } from "@/api/client";
 import { fallbackInstructorColor, useInstructorColors } from "@/features/instructor/colors";
-import { nextPass } from "@/features/member/nextPass";
 import { LessonSelectionCard } from "./LessonSelectionCard";
 import { WeekToolbarControls } from "./WeekToolbarControls";
 import { useLessonPermissions } from "./lessonPermissions";
@@ -124,7 +122,7 @@ export function TimetablePage({
         }}
       />
     );
-  const renderToolbar = (legend?: ReactNode) => (
+  const renderToolbar = () => (
     <div
       className="timetable-toolbar timetable-main-toolbar"
       data-editing={editing}
@@ -136,7 +134,6 @@ export function TimetablePage({
         start={start}
         today={today}
         onChangeDate={changeDate}
-        navigationPrefix={legend}
         navigationSuffix={
           canEdit && (
             <div className="menu-actions timetable-edit-actions">
@@ -221,7 +218,7 @@ type ScheduleProps = {
   setScope: (value: string) => void;
   status: string;
   setStatus: (value: string) => void;
-  renderToolbar: (legend?: ReactNode) => ReactNode;
+  renderToolbar: () => ReactNode;
 };
 
 function WeekSchedule({
@@ -349,13 +346,9 @@ function Schedule({
   const instructors = [
     ...new Map(visibleRows.map((lesson) => [lesson.instructor.id, lesson.instructor])).values(),
   ].sort((a, b) => a.name.localeCompare(b.name, "ko"));
-  const myPasses = useAllMyPasses({}, user.role === "MEMBER");
-  const myInstructor = nextPass(myPasses.data?.content ?? [])?.instructor;
   const instructorOptions = [
     ...new Map(lessons.map((lesson) => [lesson.instructor.id, lesson.instructor])).values(),
-  ]
-    .filter((item) => item.id !== myInstructor?.id)
-    .sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  ].sort((a, b) => a.name.localeCompare(b.name, "ko"));
   const selected = visibleRows.find((lesson) => lesson.id === selectedId);
   const dates = Array.from({ length: 7 }, (_, i) => shiftDate(start, i));
   const days = dates.map((date) => layoutDay(visibleRows, date));
@@ -482,13 +475,7 @@ function Schedule({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체 강사</SelectItem>
-              {myInstructor && (
-                <SelectItem value={String(myInstructor.id)}>
-                  담당 강사 수업 ({myInstructor.name})
-                </SelectItem>
-              )}
               {instructor !== "all" &&
-                instructor !== String(myInstructor?.id) &&
                 !instructorOptions.some((item) => String(item.id) === instructor) && (
                   <SelectItem value={instructor}>선택한 강사 (수업 없음)</SelectItem>
                 )}
@@ -497,7 +484,7 @@ function Schedule({
                   key={item.id}
                   value={String(item.id)}
                 >
-                  {item.name}
+                  {user.role === "MEMBER" ? `담당 강사 수업 (${item.name})` : item.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -538,33 +525,32 @@ function Schedule({
   );
   return (
     <>
-      {renderToolbar(
-        view === "calendar" && instructors.length > 0 ? (
-          <div
-            className="timetable-legend"
-            aria-label="강사별 시간표 색상"
-          >
-            <ul>
-              {instructors.map((instructor) => (
-                <li key={instructor.id}>
-                  <span
-                    className="timetable-legend-swatch"
-                    style={
-                      {
-                        "--instructor-color":
-                          instructorColors[instructor.id] ?? fallbackInstructorColor(instructor.id),
-                      } as CSSProperties
-                    }
-                    aria-hidden="true"
-                  />
-                  {instructor.name}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : undefined,
+      {renderToolbar()}
+      {filtersPanel}
+      {view === "calendar" && instructors.length > 0 && (
+        <div
+          className="timetable-legend"
+          aria-label="강사별 시간표 색상"
+        >
+          <ul>
+            {instructors.map((instructor) => (
+              <li key={instructor.id}>
+                <span
+                  className="timetable-legend-swatch"
+                  style={
+                    {
+                      "--instructor-color":
+                        instructorColors[instructor.id] ?? fallbackInstructorColor(instructor.id),
+                    } as CSSProperties
+                  }
+                  aria-hidden="true"
+                />
+                {instructor.name}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
-      {(editing || !visibleRows.length) && filtersPanel}
       {!visibleRows.length && !editing ? (
         <MenuPanel>
           <MenuEmpty
@@ -658,7 +644,7 @@ function Schedule({
                         style={
                           {
                             top: `${((eventStart - fromHour * 60) / (hours.length * 60)) * 100}%`,
-                            height: `${((end - eventStart) / (hours.length * 60)) * 100}%`,
+                            "--timetable-event-height": `${((end - eventStart) / (hours.length * 60)) * 100}%`,
                             left: `${(column / columns) * 100}%`,
                             width: `${100 / columns}%`,
                             ...(instructorColors[lesson.instructor.id]
@@ -698,7 +684,6 @@ function Schedule({
             aria-label="선택한 수업 요약"
             aria-live="polite"
           >
-            {filtersPanel}
             <LessonSelectionCard
               lesson={selected}
               emptyMessage={

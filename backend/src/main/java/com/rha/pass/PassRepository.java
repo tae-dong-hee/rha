@@ -33,12 +33,12 @@ public interface PassRepository extends JpaRepository<Pass, Long>, JpaSpecificat
     Optional<Pass> findByIdForUpdate(@Param("id") Long id);
 
     /**
-     * 예약에 쓸 수 있는 이용권. 환불되지 않았고, 수업일이 시작일~만료일 안에 있고, 취소되지 않은 일시정지 기간에
+     * 해당 수업 강사에게 예약에 쓸 수 있는 이용권. 환불되지 않았고, 수업일이 시작일~만료일 안에 있고, 취소되지 않은 일시정지 기간에
      * 속하지 않으며, 잔여 횟수가 있는 것을 만료일이 이른 순(같으면 먼저 발급된 순)으로 반환한다.
      */
     @Query("""
             select p from Pass p
-            where p.memberId = :memberId and p.remainingCount > 0
+            where p.memberId = :memberId and p.instructorId = :instructorId and p.remainingCount > 0
               and p.status <> com.rha.pass.PassStatus.REFUNDED
               and p.startDate <= :lessonDate and p.endDate >= :lessonDate
               and not exists (select 1 from PassPause pp
@@ -47,19 +47,20 @@ public interface PassRepository extends JpaRepository<Pass, Long>, JpaSpecificat
             order by p.endDate asc, p.id asc
             """)
     List<Pass> findReservableCandidates(@Param("memberId") Long memberId,
-            @Param("lessonDate") LocalDate lessonDate);
+            @Param("instructorId") Long instructorId, @Param("lessonDate") LocalDate lessonDate);
 
     /** 잠근 이용권이 지금도 그 수업일에 예약할 수 있는지. 조건은 {@link #findReservableCandidates}와 같다. */
     @Query("""
             select count(p) > 0 from Pass p
-            where p.id = :passId and p.remainingCount > 0
+            where p.id = :passId and p.instructorId = :instructorId and p.remainingCount > 0
               and p.status <> com.rha.pass.PassStatus.REFUNDED
               and p.startDate <= :lessonDate and p.endDate >= :lessonDate
               and not exists (select 1 from PassPause pp
                               where pp.passId = p.id and pp.status <> com.rha.pass.PassPauseStatus.CANCELED
                                 and pp.startDate <= :lessonDate and pp.endDate >= :lessonDate)
             """)
-    boolean isReservableOn(@Param("passId") Long passId, @Param("lessonDate") LocalDate lessonDate);
+    boolean isReservableOn(@Param("passId") Long passId, @Param("instructorId") Long instructorId,
+            @Param("lessonDate") LocalDate lessonDate);
 
     /**
      * 만료일이 지났지만 아직 EXPIRED가 아닌 이용권(환불된 이용권 제외). 이용권마다 활동 이력을 남기기 위해 한 건씩

@@ -198,7 +198,6 @@
   }
   body {
     margin: 0;
-    min-width: 320px;
     word-break: keep-all;
   }
   button,
@@ -598,12 +597,12 @@
   --timetable-fact-width: 5rem;
   --timetable-height: 34rem;
   --timetable-mobile-height: 32rem;
-  --timetable-hour-height: 2.75rem;
-  --timetable-member-hour-height: 2.833333rem;
+  --timetable-hour-height: 5.25rem;
+  --timetable-member-hour-height: 5.25rem;
   --timetable-standard-hours: 12;
   --timetable-header-height: 2.5rem;
   --timetable-time-width: 3.5rem;
-  --timetable-day-width: 5.5rem;
+  --timetable-day-width: 10rem;
   --admin-color-swatch-size: 1.5rem;
   --timetable-nav-radius: 999px;
   --timetable-event-padding: 0.25rem;

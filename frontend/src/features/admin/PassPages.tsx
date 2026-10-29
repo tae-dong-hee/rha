@@ -5,6 +5,13 @@ import { useState } from "react";
 import * as api from "@/api/generated/api";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MenuPanel } from "@/components/layout/MenuPanel";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -680,7 +687,7 @@ export function PaymentsList({
                     title: "결제 기록",
                     description:
                       "센터에서 받은 결제 내역을 기록합니다. 실제 결제는 진행되지 않습니다.",
-                    submitLabel: "결제 기록",
+                    submitLabel: "저장",
                     fields: paymentFields,
                     initial: {
                       method: "CARD",
@@ -723,16 +730,13 @@ export function PaymentsList({
             },
             { label: "금액", money: true, render: (r) => money(r.amount) },
             {
-              label: "환불",
-              render: (r) =>
-                r.refunded ? (
-                  <StatusBadge
-                    domain="payment"
-                    status="REFUNDED"
-                  />
-                ) : (
-                  "—"
-                ),
+              label: "상태",
+              render: (r) => (
+                <StatusBadge
+                  domain="paymentRecord"
+                  status={r.refunded ? "REFUND_MARKED" : "RECORDED"}
+                />
+              ),
             },
             { label: "메모", render: (r) => r.memo ?? "—" },
             {
@@ -741,78 +745,87 @@ export function PaymentsList({
                 locked ? (
                   "—"
                 ) : (
-                  <div className="menu-actions">
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        setAction({
-                          title: "결제 기록 수정",
-                          description: "실제 결제 사실에 맞게 수정합니다.",
-                          submitLabel: "결제 기록 저장",
-                          fields: paymentFields,
-                          initial: {
-                            method: r.method,
-                            amount: String(r.amount),
-                            paidAt: r.paidAt,
-                            memo: r.memo ?? "",
-                          },
-                          onSubmit: (v) =>
-                            update.mutateAsync({
-                              passId: r.pass.id,
-                              paymentId: r.id,
-                              data: {
-                                method: textValue(v, "method") as api.PaymentMethod,
-                                amount: numValue(v, "amount"),
-                                paidAt: textValue(v, "paidAt"),
-                                memo: textValue(v, "memo") || null,
-                              },
-                            }),
-                        })
-                      }
-                    >
-                      수정
-                    </Button>
-                    {r.refunded && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                       <Button
-                        variant="warning"
-                        onClick={() =>
+                        variant="outline"
+                        aria-label={`${r.member.name} 결제 기록 관리`}
+                      >
+                        관리
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onSelect={() =>
                           setAction({
-                            title: "환불 표시 해제",
-                            description:
-                              "이전 방식으로 남긴 결제 기록의 환불 표시를 해제합니다. 환불은 이용권 상세의 '환불 처리'로 진행해 주세요.",
-                            submitLabel: "환불 표시 해제",
-                            submitVariant: "warning",
-                            danger: true,
-                            onSubmit: () =>
-                              refund.mutateAsync({
+                            title: "결제 기록 수정",
+                            description: "실제 결제 사실에 맞게 수정합니다.",
+                            submitLabel: "결제 기록 저장",
+                            fields: paymentFields,
+                            initial: {
+                              method: r.method,
+                              amount: String(r.amount),
+                              paidAt: r.paidAt,
+                              memo: r.memo ?? "",
+                            },
+                            onSubmit: (v) =>
+                              update.mutateAsync({
                                 passId: r.pass.id,
                                 paymentId: r.id,
-                                data: { refunded: false },
+                                data: {
+                                  method: textValue(v, "method") as api.PaymentMethod,
+                                  amount: numValue(v, "amount"),
+                                  paidAt: textValue(v, "paidAt"),
+                                  memo: textValue(v, "memo") || null,
+                                },
                               }),
                           })
                         }
                       >
-                        환불 표시 해제
-                      </Button>
-                    )}
-                    <Button
-                      variant="destructive"
-                      onClick={() =>
-                        setAction({
-                          title: "결제 기록 삭제",
-                          description:
-                            "잘못 등록된 기록만 삭제해 주세요. 결제 합계와 미수금이 다시 계산됩니다.",
-                          submitLabel: "기록 삭제",
-                          submitVariant: "destructive",
-                          danger: true,
-                          onSubmit: () =>
-                            remove.mutateAsync({ passId: r.pass.id, paymentId: r.id }),
-                        })
-                      }
-                    >
-                      삭제
-                    </Button>
-                  </div>
+                        수정
+                      </DropdownMenuItem>
+                      {r.refunded && (
+                        <DropdownMenuItem
+                          onSelect={() =>
+                            setAction({
+                              title: "환불 표시 해제",
+                              description:
+                                "이전 방식으로 남긴 결제 기록의 환불 표시를 해제합니다. 환불은 이용권 상세의 '환불 처리'로 진행해 주세요.",
+                              submitLabel: "환불 표시 해제",
+                              submitVariant: "warning",
+                              danger: true,
+                              onSubmit: () =>
+                                refund.mutateAsync({
+                                  passId: r.pass.id,
+                                  paymentId: r.id,
+                                  data: { refunded: false },
+                                }),
+                            })
+                          }
+                        >
+                          환불 표시 해제
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onSelect={() =>
+                          setAction({
+                            title: "결제 기록 삭제",
+                            description:
+                              "잘못 등록된 기록만 삭제해 주세요. 결제 합계와 미수금이 다시 계산됩니다.",
+                            submitLabel: "기록 삭제",
+                            submitVariant: "destructive",
+                            danger: true,
+                            onSubmit: () =>
+                              remove.mutateAsync({ passId: r.pass.id, paymentId: r.id }),
+                          })
+                        }
+                      >
+                        삭제
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ),
             },
           ]}

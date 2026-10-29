@@ -319,6 +319,13 @@
   .member-reservations-page .menu-panel-table [data-slot="table-container"] {
     max-height: none;
   }
+  .member-reservations-page .menu-tabs,
+  .member-reservations-page .menu-stack {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .member-reservations-page [data-slot="tabs-content"] {
+    min-width: 0;
+  }
   .member-preview .main-content .content:has(> .member-reservations-page) {
     padding-block: var(--page-list-padding-block);
   }
@@ -339,6 +346,13 @@
   }
   .member-reservations-table [data-slot="button"] {
     max-width: 100%;
+  }
+  .member-reservations-table [data-slot="table-cell"]:first-child [data-slot="button"] {
+    height: auto;
+    min-height: var(--control-height);
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
   }
   .member-reservations-page .menu-pagination {
     flex-wrap: wrap;

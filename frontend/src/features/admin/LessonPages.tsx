@@ -476,7 +476,7 @@ export function LessonEditor({
               { value: "PUBLISHED", label: "즉시 공개" },
               { value: "SCHEDULED", label: "공개 예약" },
             ],
-            description: "개설 직후 선택한 공개 상태를 적용합니다.",
+            description: "회원이 시작 전 수업을 예약하려면 즉시 공개를 선택해 주세요.",
           },
           {
             name: "publishAt",
@@ -507,7 +507,7 @@ export function LessonEditor({
                 endAt: toLocalInput(l.endAt),
               }
             : {
-                publication: "PRIVATE",
+                publication: "PUBLISHED",
                 lessonTypeId: typeChoices.length === 1 ? String(typeChoices[0].id) : "",
                 title: typeChoices.find((type) => String(type.id) === String(initialValues.lessonTypeId))?.name ?? (typeChoices.length === 1 ? typeChoices[0].name : ""),
                 instructorId: instructors.data?.content.length === 1 ? String(instructors.data.content[0].id) : "",
@@ -600,12 +600,14 @@ export function LessonEditor({
           : "수업 정보와 공개 상태를 설정합니다. 센터 영업시간과 강사 가능시간을 확인해 주세요."
       }
       action={
-        <Button
-          variant="ghost"
-          onClick={() => (onBack ? onBack() : onNavigate("admin-lessons"))}
-        >
-          {onBack ? "시간표로" : "목록으로"}
-        </Button>
+        !id && onBack ? undefined : (
+          <Button
+            variant="ghost"
+            onClick={() => (onBack ? onBack() : onNavigate("admin-lessons"))}
+          >
+            {onBack ? "시간표로" : "목록으로"}
+          </Button>
+        )
       }
     >
       {id ? (

@@ -65,6 +65,7 @@ export const notificationCategories: Record<string, string> = {
   ABSENCE_REJECTED: "부재 반려",
   LESSON_CANCELED: "수업 취소",
   RESERVATION_CANCELED: "예약 취소",
+  RESERVATION_CREATED_BY_MEMBER: "회원 예약",
   RESERVATION_CANCELED_BY_MEMBER: "회원 예약 취소",
 };
 

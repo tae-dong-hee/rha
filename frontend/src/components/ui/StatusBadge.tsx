@@ -44,6 +44,10 @@ const statuses = {
     PAID: ["완납", "success"],
     REFUNDED: ["환불", "destructive"],
   },
+  paymentRecord: {
+    RECORDED: ["기록됨", "neutral"],
+    REFUND_MARKED: ["환불 표시", "destructive"],
+  },
   settlement: {
     CALCULATED: ["계산 완료", "neutral"],
     REVIEW_REQUESTED: ["검토 요청", "warning"],

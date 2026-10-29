@@ -18,7 +18,13 @@ import com.rha.member.MemberPermission;
 import com.rha.member.MemberPermissionRepository;
 import com.rha.member.MemberRepository;
 import com.rha.member.MemberRole;
+import com.rha.pass.Pass;
 import com.rha.pass.PassRepository;
+import com.rha.pass.PassPause;
+import com.rha.pass.PassPauseStatus;
+import com.rha.pass.PassStatus;
+import com.rha.payment.PassPayment;
+import com.rha.reservationpolicy.ReservationPolicyRepository;
 import com.rha.reservation.CanceledBy;
 import com.rha.reservation.Reservation;
 import com.rha.reservation.ReservationRepository;
@@ -26,8 +32,11 @@ import com.rha.reservation.ReservationStatus;
 import com.rha.room.Room;
 import com.rha.room.RoomRepository;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -75,6 +84,7 @@ public class LessonService {
     private final AbsenceRepository absenceRepository;
     private final ReservationRepository reservationRepository;
     private final PassRepository passRepository;
+    private final ReservationPolicyRepository policyRepository;
     private final NotificationPublisher notificationPublisher;
     private final AdminGuard adminGuard;
     private final RequestValidator requestValidator;
@@ -86,6 +96,7 @@ public class LessonService {
             MemberPermissionRepository permissionRepository, BusinessHourRepository businessHourRepository,
             InstructorAvailabilityRepository availabilityRepository, AbsenceRepository absenceRepository,
             ReservationRepository reservationRepository, PassRepository passRepository,
+            ReservationPolicyRepository policyRepository,
             NotificationPublisher notificationPublisher, AdminGuard adminGuard,
             RequestValidator requestValidator, ActivityLogRecorder activityLogRecorder, RowLock rowLock) {
         this.activityLogRecorder = activityLogRecorder;
@@ -100,6 +111,7 @@ public class LessonService {
         this.absenceRepository = absenceRepository;
         this.reservationRepository = reservationRepository;
         this.passRepository = passRepository;
+        this.policyRepository = policyRepository;
         this.notificationPublisher = notificationPublisher;
         this.adminGuard = adminGuard;
         this.requestValidator = requestValidator;
@@ -149,11 +161,9 @@ public class LessonService {
     @Transactional(readOnly = true)
     public LessonResponse getLesson(Long callerId, Long lessonId) {
         Member caller = findCaller(callerId);
-        Lesson lesson = lessonRepository.findById(lessonId)
+        Lesson lesson = lessonRepository.findOne(visibleTo(caller).and((root, query, cb) ->
+                cb.equal(root.get("id"), lessonId)))
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        if (!canSee(caller, lesson)) {
-            throw new ApiException(ErrorCode.NOT_FOUND);
-        }
         return toResponse(lesson);
     }
 
@@ -457,7 +467,7 @@ public class LessonService {
 
     // ===== 노출 범위 =====
 
-    /** 관리자는 모든 수업, 강사는 공개 + 담당 + 권한 있는 유형의 수업, 그 외는 공개된 수업만 본다. */
+    /** 관리자는 모든 수업, 강사는 공개 + 담당 + 권한 있는 유형의 수업, 회원은 이용권으로 예약 가능한 강사의 공개 수업만 본다. */
     private Specification<Lesson> visibleTo(Member caller) {
         if (caller.isActive() && caller.isRole(MemberRole.ADMIN)) {
             return (root, query, cb) -> cb.conjunction();
@@ -474,21 +484,42 @@ public class LessonService {
                 return cb.or(any.toArray(new Predicate[0]));
             };
         }
+        if (caller.isRole(MemberRole.MEMBER)) {
+            boolean allowUnpaid = policyRepository.findById((short) 1).orElseThrow()
+                    .isAllowUnpaidReservation();
+            return (root, query, cb) -> {
+                var localStart = cb.function("timezone", LocalDateTime.class,
+                        cb.literal(CENTER_ZONE.getId()), root.get("startAt"));
+                var lessonDate = cb.function("date", LocalDate.class, localStart);
+                Subquery<Long> eligible = query.subquery(Long.class);
+                Root<Pass> pass = eligible.from(Pass.class);
+                Subquery<Long> paused = eligible.subquery(Long.class);
+                Root<PassPause> pause = paused.from(PassPause.class);
+                paused.select(pause.get("id")).where(
+                        cb.equal(pause.get("passId"), pass.get("id")),
+                        cb.notEqual(pause.get("status"), PassPauseStatus.CANCELED),
+                        cb.lessThanOrEqualTo(pause.get("startDate"), lessonDate),
+                        cb.greaterThanOrEqualTo(pause.get("endDate"), lessonDate));
+                List<Predicate> conditions = new ArrayList<>(List.of(
+                        cb.equal(pass.get("memberId"), caller.getId()),
+                        cb.equal(pass.get("instructorId"), root.get("instructorId")),
+                        cb.greaterThan(pass.get("remainingCount"), 0),
+                        cb.notEqual(pass.get("status"), PassStatus.REFUNDED),
+                        cb.lessThanOrEqualTo(pass.get("startDate"), lessonDate),
+                        cb.greaterThanOrEqualTo(pass.get("endDate"), lessonDate),
+                        cb.not(cb.exists(paused))));
+                if (!allowUnpaid) {
+                    Subquery<Long> paid = eligible.subquery(Long.class);
+                    Root<PassPayment> payment = paid.from(PassPayment.class);
+                    paid.select(cb.sum(payment.get("amount")))
+                            .where(cb.equal(payment.get("passId"), pass.get("id")));
+                    conditions.add(cb.greaterThanOrEqualTo(cb.coalesce(paid, 0L), pass.get("price")));
+                }
+                eligible.select(pass.get("id")).where(conditions.toArray(new Predicate[0]));
+                return cb.and(cb.equal(root.get("status"), LessonStatus.PUBLISHED), cb.exists(eligible));
+            };
+        }
         return (root, query, cb) -> cb.equal(root.get("status"), LessonStatus.PUBLISHED);
-    }
-
-    private boolean canSee(Member caller, Lesson lesson) {
-        if (caller.isActive() && caller.isRole(MemberRole.ADMIN)) {
-            return true;
-        }
-        if (lesson.getStatus() == LessonStatus.PUBLISHED) {
-            return true;
-        }
-        if (caller.isActive() && caller.isRole(MemberRole.INSTRUCTOR)) {
-            return lesson.getInstructorId().equals(caller.getId())
-                    || permittedTypeIds(caller.getId()).contains(lesson.getLessonTypeId());
-        }
-        return false;
     }
 
     /** 개설 또는 수정 권한이 있는 수업 유형의 id. */

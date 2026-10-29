@@ -144,16 +144,17 @@ public class ReservationService {
         activityLogRecorder.record(ActivityAction.RESERVATION_CREATED, callerId, callerId, "RESERVATION",
                 reservation.getId(), "수업 '" + lesson.getTitle() + "'(" + ActivityTime.format(lesson.getStartAt())
                         + ") 예약 (이용권 #" + pass.getId() + ")");
+        notificationPublisher.reservationCreatedByMember(reservation, lesson, caller.getName());
         return toResponses(List.of(reservation)).get(0);
     }
 
     /**
-     * 수업일(현지 날짜)이 기간 안에 있고 일시정지에 속하지 않으며 잔여 횟수가 있는 이용권 중
+     * 수업 담당 강사가 같고 수업일(현지 날짜)이 기간 안에 있으며 일시정지에 속하지 않고 잔여 횟수가 있는 이용권 중
      * 만료일이 가장 이른 것(같으면 먼저 발급된 것)을 고른다. 미수 예약이 불허이면 완납한 이용권만 대상이다.
      */
     private Pass choosePass(Long memberId, Lesson lesson) {
         LocalDate lessonDate = lesson.getStartAt().atZone(CENTER_ZONE).toLocalDate();
-        List<Pass> candidates = passRepository.findReservableCandidates(memberId, lessonDate);
+        List<Pass> candidates = passRepository.findReservableCandidates(memberId, lesson.getInstructorId(), lessonDate);
         if (candidates.isEmpty()) {
             throw new ApiException(ErrorCode.NO_AVAILABLE_PASS);
         }
@@ -166,7 +167,7 @@ public class ReservationService {
             }
             // 후보는 잠그기 전에 고른 것이므로, 잠근 뒤 그 사이 등록된 일시정지나 바뀐 횟수·기간을 다시 확인한다.
             Pass locked = rowLock.lock(candidate);
-            if (passRepository.isReservableOn(locked.getId(), lessonDate)) {
+            if (passRepository.isReservableOn(locked.getId(), lesson.getInstructorId(), lessonDate)) {
                 return locked;
             }
         }
