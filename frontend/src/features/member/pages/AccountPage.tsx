@@ -164,17 +164,19 @@ export function AccountPage({
       <MenuPanel
         variant="settings"
         title="회원 탈퇴"
+        action={
+          <Button
+            variant="destructive"
+            onClick={() => setWithdrawOpen(true)}
+          >
+            회원 탈퇴
+          </Button>
+        }
       >
         <p className="menu-note">
           탈퇴하면 남은 이용권을 사용할 수 없으며 같은 이메일로 다시 가입할 수 없습니다. 시작 전
           예약은 먼저 취소해 주세요.
         </p>
-        <Button
-          variant="destructive"
-          onClick={() => setWithdrawOpen(true)}
-        >
-          회원 탈퇴
-        </Button>
       </MenuPanel>
       {withdrawOpen && (
         <ActionDialog
