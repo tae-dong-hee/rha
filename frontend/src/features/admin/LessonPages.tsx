@@ -63,17 +63,15 @@ function LessonFilterSelect({
   value,
   items,
   onChange,
-  className,
 }: {
   id: string;
   label: string;
   value: string;
   items: Option[];
   onChange: (value: string) => void;
-  className?: string;
 }) {
   return (
-    <Field className={className}>
+    <Field>
       <FieldLabel
         htmlFor={id}
         className="sr-only"
@@ -87,7 +85,10 @@ function LessonFilterSelect({
         <SelectTrigger id={id}>
           <SelectValue placeholder={items[0]?.label} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent
+          position="popper"
+          align="start"
+        >
           {items.map((item) => (
             <SelectItem
               key={item.value}
@@ -150,15 +151,39 @@ export function LessonsPage({
           start={start}
           today={today}
           onChangeDate={changeDate}
-          navigationPrefix={
-            <LessonFilterSelect
-              id="admin-lesson-instructor"
-              label="강사"
-              value={String(filters.instructorId ?? "ALL")}
-              items={[{ ...ALL, label: "전체 강사" }, ...options(instructors.data?.content)]}
-              onChange={(value) => updateSidebarFilter("instructorId", value)}
-              className="admin-lesson-instructor-filter"
-            />
+          filters={
+            <div className="timetable-toolbar timetable-filters">
+              <div className="menu-actions">
+                <LessonFilterSelect
+                  id="admin-lesson-status"
+                  label="수업 상태"
+                  value={String(filters.status ?? "ALL")}
+                  items={lessonStates}
+                  onChange={(value) => updateSidebarFilter("status", value)}
+                />
+                <LessonFilterSelect
+                  id="admin-lesson-type"
+                  label="수업 유형"
+                  value={String(filters.lessonTypeId ?? "ALL")}
+                  items={[{ ...ALL, label: "전체 수업 유형" }, ...options(types.data?.content)]}
+                  onChange={(value) => updateSidebarFilter("lessonTypeId", value)}
+                />
+                <LessonFilterSelect
+                  id="admin-lesson-instructor"
+                  label="강사"
+                  value={String(filters.instructorId ?? "ALL")}
+                  items={[{ ...ALL, label: "전체 강사" }, ...options(instructors.data?.content)]}
+                  onChange={(value) => updateSidebarFilter("instructorId", value)}
+                />
+                <LessonFilterSelect
+                  id="admin-lesson-room"
+                  label="룸"
+                  value={String(filters.roomId ?? "ALL")}
+                  items={[{ ...ALL, label: "전체 룸" }, ...options(rooms.data?.content)]}
+                  onChange={(value) => updateSidebarFilter("roomId", value)}
+                />
+              </div>
+            </div>
           }
           navigationSuffix={
             <Button onClick={() => onNavigate("admin-lesson-create")}>수업 개설</Button>
@@ -205,31 +230,6 @@ export function LessonsPage({
           aria-label="선택한 수업 요약"
           aria-live="polite"
         >
-          <div className="timetable-toolbar timetable-filters">
-            <div className="menu-actions">
-              <LessonFilterSelect
-                id="admin-lesson-status"
-                label="수업 상태"
-                value={String(filters.status ?? "ALL")}
-                items={lessonStates}
-                onChange={(value) => updateSidebarFilter("status", value)}
-              />
-              <LessonFilterSelect
-                id="admin-lesson-type"
-                label="수업 유형"
-                value={String(filters.lessonTypeId ?? "ALL")}
-                items={[{ ...ALL, label: "전체 수업 유형" }, ...options(types.data?.content)]}
-                onChange={(value) => updateSidebarFilter("lessonTypeId", value)}
-              />
-              <LessonFilterSelect
-                id="admin-lesson-room"
-                label="룸"
-                value={String(filters.roomId ?? "ALL")}
-                items={[{ ...ALL, label: "전체 룸" }, ...options(rooms.data?.content)]}
-                onChange={(value) => updateSidebarFilter("roomId", value)}
-              />
-            </div>
-          </div>
           <LessonSelectionCard lesson={selected}>
             {selected && (
               <Button onClick={() => onNavigate("admin-lesson-detail", selected.id)}>
@@ -509,18 +509,34 @@ export function LessonEditor({
             : {
                 publication: "PUBLISHED",
                 lessonTypeId: typeChoices.length === 1 ? String(typeChoices[0].id) : "",
-                title: typeChoices.find((type) => String(type.id) === String(initialValues.lessonTypeId))?.name ?? (typeChoices.length === 1 ? typeChoices[0].name : ""),
-                instructorId: instructors.data?.content.length === 1 ? String(instructors.data.content[0].id) : "",
+                title:
+                  typeChoices.find((type) => String(type.id) === String(initialValues.lessonTypeId))
+                    ?.name ?? (typeChoices.length === 1 ? typeChoices[0].name : ""),
+                instructorId:
+                  instructors.data?.content.length === 1
+                    ? String(instructors.data.content[0].id)
+                    : "",
                 roomId: rooms.data?.content.length === 1 ? String(rooms.data.content[0].id) : "",
                 ...initialValues,
               }
         }
-        onFieldChange={!id ? (name, values): Values => {
-          if (name === "lessonTypeId" && (!values.title || typeChoices.some((type) => type.name === values.title))) {
-            return { title: typeChoices.find((type) => String(type.id) === values.lessonTypeId)?.name ?? "" };
-          }
-          return {};
-        } : undefined}
+        onFieldChange={
+          !id
+            ? (name, values): Values => {
+                if (
+                  name === "lessonTypeId" &&
+                  (!values.title || typeChoices.some((type) => type.name === values.title))
+                ) {
+                  return {
+                    title:
+                      typeChoices.find((type) => String(type.id) === values.lessonTypeId)?.name ??
+                      "",
+                  };
+                }
+                return {};
+              }
+            : undefined
+        }
         submitLabel={id ? "수업 수정" : "수업 개설"}
         successToast={false}
         onCancel={() =>

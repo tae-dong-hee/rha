@@ -6,7 +6,15 @@ import {
 } from "@/features/admin/queries";
 import { LessonEditor } from "@/features/admin/LessonPages";
 import type { Values } from "@/features/admin/AdminUI";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useCreateReservation, type Lesson } from "@/api/generated/api";
@@ -40,7 +48,7 @@ import { fallbackInstructorColor, useInstructorColors } from "@/features/instruc
 import { LessonSelectionCard } from "./LessonSelectionCard";
 import { WeekToolbarControls } from "./WeekToolbarControls";
 import { useLessonPermissions } from "./lessonPermissions";
-import { dateInSeoul, layoutDay, shiftDate, timeInSeoul, weekRange, weekStart } from "./model";
+import { dateInSeoul, layoutDayItems, shiftDate, timeInSeoul, weekRange, weekStart } from "./model";
 import "./timetable.css";
 
 const weekdays = ["월", "화", "수", "목", "금", "토", "일"];
@@ -54,6 +62,7 @@ export function TimetablePage({
   selectedLessonId,
   onSelectLesson,
   initialInstructorId,
+  legendHost,
 }: {
   user: DashboardUser;
   onNavigate: (screen: Screen, id?: number) => void;
@@ -63,6 +72,7 @@ export function TimetablePage({
   selectedLessonId?: number | null;
   onSelectLesson?: (id: number | null) => void;
   initialInstructorId?: number;
+  legendHost?: HTMLElement | null;
 }) {
   const today = dateInSeoul();
   const [date, setDate] = useState(initialDate ?? today);
@@ -122,7 +132,7 @@ export function TimetablePage({
         }}
       />
     );
-  const renderToolbar = () => (
+  const renderToolbar = (filters?: ReactNode) => (
     <div
       className="timetable-toolbar timetable-main-toolbar"
       data-editing={editing}
@@ -134,6 +144,7 @@ export function TimetablePage({
         start={start}
         today={today}
         onChangeDate={changeDate}
+        filters={filters}
         navigationSuffix={
           canEdit && (
             <div className="menu-actions timetable-edit-actions">
@@ -188,6 +199,7 @@ export function TimetablePage({
         selectedId={selectedId}
         onSelect={setSelectedId}
         renderToolbar={renderToolbar}
+        legendHost={legendHost}
         view={view}
       />
     </section>
@@ -218,7 +230,8 @@ type ScheduleProps = {
   setScope: (value: string) => void;
   status: string;
   setStatus: (value: string) => void;
-  renderToolbar: () => ReactNode;
+  legendHost?: HTMLElement | null;
+  renderToolbar: (filters?: ReactNode) => ReactNode;
 };
 
 function WeekSchedule({
@@ -315,6 +328,7 @@ function Schedule({
   selectedId,
   onSelect,
   renderToolbar,
+  legendHost,
   view,
 }: ScheduleProps & { lessons: Lesson[] }) {
   const client = useQueryClient();
@@ -323,6 +337,8 @@ function Schedule({
   const catalogTypes = useAllLessonTypes();
   const catalogRooms = useAllRooms();
   const [reservationDialog, setReservationDialog] = useState<DialogState>(null);
+  const [groupDialog, setGroupDialog] = useState<{ date: string; lessons: Lesson[] } | null>(null);
+  const layoutRef = useRef<HTMLDivElement>(null);
   const range = weekRange(start);
   const myReservations = useAllMyReservations(
     { lessonFrom: range.from, lessonTo: range.to, status: "RESERVED" },
@@ -351,11 +367,52 @@ function Schedule({
   ].sort((a, b) => a.name.localeCompare(b.name, "ko"));
   const selected = visibleRows.find((lesson) => lesson.id === selectedId);
   const dates = Array.from({ length: 7 }, (_, i) => shiftDate(start, i));
-  const days = dates.map((date) => layoutDay(visibleRows, date));
+  const days = dates.map((date) => layoutDayItems(visibleRows, date));
   const events = days.flat();
   const fromHour = Math.min(9, ...events.map((event) => Math.floor(event.start / 60)));
   const toHour = Math.max(21, ...events.map((event) => Math.ceil(event.end / 60)));
   const hours = Array.from({ length: toHour - fromHour }, (_, i) => fromHour + i);
+  useLayoutEffect(() => {
+    const layout = layoutRef.current;
+    if (view !== "calendar" || !layout) return;
+    const scroll = layout.querySelector<HTMLElement>(".timetable-scroll");
+    const header = layout.querySelector<HTMLElement>(".timetable-header");
+    const content = layout.closest<HTMLElement>(".content");
+    const footer = content?.parentElement?.querySelector<HTMLElement>(".app-footer");
+    if (!scroll || !header || !content) return;
+    const fitHours = () => {
+      const styles = getComputedStyle(layout);
+      const token = (name: string) => Number.parseFloat(styles.getPropertyValue(name));
+      const contentBottom = Number.parseFloat(getComputedStyle(content).paddingBottom);
+      const scrollBorder =
+        Number.parseFloat(getComputedStyle(scroll).borderTopWidth) +
+        Number.parseFloat(getComputedStyle(scroll).borderBottomWidth);
+      const available =
+        window.innerHeight -
+        (scroll.getBoundingClientRect().top + window.scrollY) -
+        header.offsetHeight -
+        contentBottom -
+        (footer?.offsetHeight ?? 0) -
+        scrollBorder -
+        token("--timetable-fit-bottom-gap");
+      const hourHeight = Math.min(
+        token("--timetable-fit-hour-max"),
+        Math.max(token("--timetable-fit-hour-min"), Math.floor(available / hours.length)),
+      );
+      const value = `${hourHeight}px`;
+      if (layout.style.getPropertyValue("--timetable-hour-height") !== value)
+        layout.style.setProperty("--timetable-hour-height", value);
+      layout.dataset.compact = String(hourHeight < token("--timetable-fit-compact-at"));
+    };
+    fitHours();
+    const observer = new ResizeObserver(fitHours);
+    observer.observe(layout.closest(".timetable-page") ?? layout);
+    window.addEventListener("resize", fitHours);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", fitHours);
+    };
+  });
   const lessonTypes = [
     ...new Map(
       [...(catalogTypes.data?.content ?? []), ...lessons.map((lesson) => lesson.lessonType)].map(
@@ -388,7 +445,10 @@ function Schedule({
               <SelectTrigger id="timetable-scope">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent
+                position="popper"
+                align="start"
+              >
                 <SelectItem value="all">조회 가능한 전체 수업</SelectItem>
                 <SelectItem value="own">
                   {user.role === "INSTRUCTOR" ? "내 담당 수업" : "내 예약 수업"}
@@ -412,7 +472,10 @@ function Schedule({
               <SelectTrigger id="timetable-status">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent
+                position="popper"
+                align="start"
+              >
                 <SelectItem value="all">전체 수업 상태</SelectItem>
                 {(["CREATED", "PUBLISHED", "UNPUBLISHED", "SCHEDULED", "CANCELED"] as const)
                   .filter((value) => view !== "calendar" || value !== "CANCELED")
@@ -442,7 +505,10 @@ function Schedule({
             <SelectTrigger id="timetable-type">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              position="popper"
+              align="start"
+            >
               <SelectItem value="all">전체 수업 유형</SelectItem>
               {lessonType !== "all" &&
                 !lessonTypes.some((item) => String(item.id) === lessonType) && (
@@ -473,7 +539,10 @@ function Schedule({
             <SelectTrigger id="timetable-instructor">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              position="popper"
+              align="start"
+            >
               <SelectItem value="all">전체 강사</SelectItem>
               {instructor !== "all" &&
                 !instructorOptions.some((item) => String(item.id) === instructor) && (
@@ -504,7 +573,10 @@ function Schedule({
             <SelectTrigger id="timetable-room">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              position="popper"
+              align="start"
+            >
               <SelectItem value="all">전체 룸</SelectItem>
               {room !== "all" && !rooms.some((item) => String(item.id) === room) && (
                 <SelectItem value={room}>선택한 룸 (수업 없음)</SelectItem>
@@ -523,34 +595,35 @@ function Schedule({
       </div>
     </div>
   );
+  const legend =
+    view === "calendar" && instructors.length > 0 ? (
+      <div
+        className="timetable-legend"
+        aria-label="강사별 시간표 색상"
+      >
+        <ul>
+          {instructors.map((instructor) => (
+            <li key={instructor.id}>
+              <span
+                className="timetable-legend-swatch"
+                style={
+                  {
+                    "--instructor-color":
+                      instructorColors[instructor.id] ?? fallbackInstructorColor(instructor.id),
+                  } as CSSProperties
+                }
+                aria-hidden="true"
+              />
+              {instructor.name}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : undefined;
   return (
     <>
-      {renderToolbar()}
-      {filtersPanel}
-      {view === "calendar" && instructors.length > 0 && (
-        <div
-          className="timetable-legend"
-          aria-label="강사별 시간표 색상"
-        >
-          <ul>
-            {instructors.map((instructor) => (
-              <li key={instructor.id}>
-                <span
-                  className="timetable-legend-swatch"
-                  style={
-                    {
-                      "--instructor-color":
-                        instructorColors[instructor.id] ?? fallbackInstructorColor(instructor.id),
-                    } as CSSProperties
-                  }
-                  aria-hidden="true"
-                />
-                {instructor.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {legendHost && legend && createPortal(legend, legendHost)}
+      {renderToolbar(filtersPanel)}
       {!visibleRows.length && !editing ? (
         <MenuPanel>
           <MenuEmpty
@@ -560,6 +633,7 @@ function Schedule({
         </MenuPanel>
       ) : (
         <div
+          ref={layoutRef}
           className="timetable-layout"
           data-editing={editing}
           data-view={view}
@@ -631,49 +705,77 @@ function Schedule({
                         />
                       ),
                     )}
-                    {day.map(({ lesson, start: eventStart, end, column, columns }) => (
-                      <button
-                        type="button"
-                        key={lesson.id}
-                        className="timetable-event"
-                        data-status={lesson.status}
-                        data-instructor-color={lesson.instructor.id % 6}
-                        aria-pressed={selectedId === lesson.id}
-                        aria-label={`${dates[i]} ${timeInSeoul(lesson.startAt)} ${lesson.title} · ${lesson.instructor.name} · ${lesson.room.name} · 예약 ${lesson.reservedCount}/${lesson.capacity} · ${getStatusLabel({ domain: "lesson", status: lesson.status })}`}
-                        title={`${timeInSeoul(lesson.startAt)}–${timeInSeoul(lesson.endAt)} ${lesson.title} · ${lesson.instructor.name} · ${lesson.room.name}`}
-                        style={
-                          {
-                            top: `${((eventStart - fromHour * 60) / (hours.length * 60)) * 100}%`,
-                            "--timetable-event-height": `${((end - eventStart) / (hours.length * 60)) * 100}%`,
-                            left: `${(column / columns) * 100}%`,
-                            width: `${100 / columns}%`,
-                            ...(instructorColors[lesson.instructor.id]
-                              ? { "--instructor-color": instructorColors[lesson.instructor.id] }
-                              : {}),
-                          } as CSSProperties
-                        }
-                        onClick={() => onSelect(lesson.id)}
-                      >
-                        <span className="timetable-event-meta">
-                          <span className="timetable-event-time">
-                            {timeInSeoul(lesson.startAt)}
-                          </span>
-                          <span>
-                            {lesson.reservedCount}/{lesson.capacity}
-                          </span>
-                        </span>
-                        <strong>
-                          {lesson.title}
-                          {lesson.status !== "PUBLISHED" && (
-                            <span className="timetable-event-status">
-                              {" "}
-                              · {getStatusLabel({ domain: "lesson", status: lesson.status })}
+                    {day.map((item) => {
+                      const { start: eventStart, end } = item;
+                      const position = {
+                        top: `${((eventStart - fromHour * 60) / (hours.length * 60)) * 100}%`,
+                        "--timetable-event-height": `${((end - eventStart) / (hours.length * 60)) * 100}%`,
+                      } as CSSProperties;
+                      if (item.kind === "group")
+                        return (
+                          <button
+                            type="button"
+                            key={`group-${eventStart}`}
+                            className="timetable-event timetable-event-group"
+                            data-short={end - eventStart < 45}
+                            style={position}
+                            aria-label={`${dates[i]} ${String(Math.floor(eventStart / 60)).padStart(2, "0")}:${String(eventStart % 60).padStart(2, "0")} 겹치는 수업 ${item.lessons.length}개 보기`}
+                            onClick={() =>
+                              setGroupDialog({ date: dates[i], lessons: item.lessons })
+                            }
+                          >
+                            <span className="timetable-event-time">
+                              {String(Math.floor(eventStart / 60)).padStart(2, "0")}:
+                              {String(eventStart % 60).padStart(2, "0")}
                             </span>
-                          )}
-                        </strong>
-                        <span>{lesson.instructor.name}</span>
-                      </button>
-                    ))}
+                            <strong>수업 {item.lessons.length}개 보기</strong>
+                          </button>
+                        );
+                      const { lesson, column, columns } = item.event;
+                      return (
+                        <button
+                          type="button"
+                          key={lesson.id}
+                          className="timetable-event"
+                          data-short={end - eventStart < 45}
+                          data-status={lesson.status}
+                          data-instructor-color={lesson.instructor.id % 6}
+                          aria-pressed={selectedId === lesson.id}
+                          aria-label={`${dates[i]} ${timeInSeoul(lesson.startAt)} ${lesson.title} · ${lesson.instructor.name} · ${lesson.room.name} · 예약 ${lesson.reservedCount}/${lesson.capacity} · ${getStatusLabel({ domain: "lesson", status: lesson.status })}`}
+                          title={`${timeInSeoul(lesson.startAt)}–${timeInSeoul(lesson.endAt)} ${lesson.title} · ${lesson.instructor.name} · ${lesson.room.name}`}
+                          style={
+                            {
+                              ...position,
+                              left: `${(column / columns) * 100}%`,
+                              width: `${100 / columns}%`,
+                              ...(instructorColors[lesson.instructor.id]
+                                ? { "--instructor-color": instructorColors[lesson.instructor.id] }
+                                : {}),
+                            } as CSSProperties
+                          }
+                          onClick={() => onSelect(lesson.id)}
+                        >
+                          <span className="timetable-event-meta">
+                            <span className="timetable-event-time">
+                              {timeInSeoul(lesson.startAt)}
+                            </span>
+                            <span>
+                              {lesson.reservedCount}/{lesson.capacity}
+                            </span>
+                          </span>
+                          <strong>
+                            {lesson.title}
+                            {lesson.status !== "PUBLISHED" && (
+                              <span className="timetable-event-status">
+                                {" "}
+                                · {getStatusLabel({ domain: "lesson", status: lesson.status })}
+                              </span>
+                            )}
+                          </strong>
+                          <span>{lesson.instructor.name}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
@@ -775,6 +877,37 @@ function Schedule({
               );
           }}
         />
+      )}
+      {groupDialog && (
+        <Dialog
+          dialog={{
+            title: `${groupDialog.date} 겹치는 수업 ${groupDialog.lessons.length}개`,
+            body: "수업을 선택하면 상세 정보를 확인할 수 있습니다.",
+          }}
+          onClose={() => setGroupDialog(null)}
+        >
+          <div className="timetable-group-list">
+            {groupDialog.lessons.map((lesson) => (
+              <Button
+                key={lesson.id}
+                variant="outline"
+                className="timetable-group-lesson"
+                onClick={() => {
+                  onSelect(lesson.id);
+                  setGroupDialog(null);
+                }}
+              >
+                <strong>
+                  {timeInSeoul(lesson.startAt)}–{timeInSeoul(lesson.endAt)} · {lesson.title}
+                </strong>
+                <span>
+                  {lesson.instructor.name} · {lesson.room.name} · 예약 {lesson.reservedCount}/
+                  {lesson.capacity}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </Dialog>
       )}
     </>
   );

@@ -57,3 +57,45 @@ export function layoutDay(lessons: Lesson[], date: string) {
   finish();
   return events;
 }
+
+export function layoutDayItems(lessons: Lesson[], date: string) {
+  const events = layoutDay(lessons, date);
+  type Event = (typeof events)[number];
+  type Item =
+    | { kind: "lesson"; event: Event; start: number; end: number }
+    | { kind: "group"; lessons: Lesson[]; start: number; end: number };
+  const items: Item[] = [];
+  let overlapping: Event[] = [];
+  let groupEnd = -1;
+  const finish = () => {
+    if (!overlapping.length) return;
+    if (overlapping[0].columns > 2) {
+      items.push({
+        kind: "group",
+        lessons: overlapping.map((event) => event.lesson),
+        start: overlapping[0].start,
+        end: groupEnd,
+      });
+    } else {
+      items.push(
+        ...overlapping.map((event) => ({
+          kind: "lesson" as const,
+          event,
+          start: event.start,
+          end: event.end,
+        })),
+      );
+    }
+  };
+  for (const event of events) {
+    if (event.start >= groupEnd) {
+      finish();
+      overlapping = [];
+      groupEnd = -1;
+    }
+    overlapping.push(event);
+    groupEnd = Math.max(groupEnd, event.end);
+  }
+  finish();
+  return items;
+}

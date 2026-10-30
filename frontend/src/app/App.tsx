@@ -357,6 +357,7 @@ function LessonViews({
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(
     initialLessonId > 0 ? initialLessonId : null,
   );
+  const [legendHost, setLegendHost] = useState<HTMLDivElement | null>(null);
   if (
     user.role === "INSTRUCTOR" &&
     initialLessonId > 0 &&
@@ -370,10 +371,19 @@ function LessonViews({
         onValueChange={(value) => setView(value as "calendar" | "list")}
         className="lesson-views"
       >
-        <TabsList aria-label="수업 보기 방식">
-          <TabsTrigger value="calendar">시간표</TabsTrigger>
-          <TabsTrigger value="list">목록</TabsTrigger>
-        </TabsList>
+        <div className="lesson-view-header">
+          <TabsList aria-label="수업 보기 방식">
+            <TabsTrigger value="calendar">시간표</TabsTrigger>
+            <TabsTrigger value="list">목록</TabsTrigger>
+          </TabsList>
+          <div
+            ref={setLegendHost}
+            className="lesson-view-legend"
+            role="region"
+            aria-label="강사별 시간표 색상"
+            tabIndex={0}
+          />
+        </div>
         <TabsContent value={view}>
           {user.role === "ADMIN" && view === "list" ? (
             <AdminLessonsPage
@@ -386,6 +396,7 @@ function LessonViews({
               onNavigate={onNavigate}
               canReserve={canReserve}
               view={view}
+              legendHost={legendHost}
               initialDate={initialLesson.data ? seoulDate(initialLesson.data.startAt) : undefined}
               initialInstructorId={initialInstructorId}
               selectedLessonId={

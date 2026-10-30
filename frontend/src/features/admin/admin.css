@@ -206,19 +206,6 @@
     padding-top: var(--space-detail);
     border-top: 1px solid var(--border);
   }
-  .admin-lesson-instructor-filter {
-    flex: 0 0 var(--timetable-filter-width);
-    min-width: 0;
-  }
-  .admin-lesson-instructor-filter [data-slot="select-trigger"] {
-    width: 100%;
-  }
-  .admin-lesson-list-toolbar .timetable-main-controls {
-    flex-wrap: nowrap;
-  }
-  .admin-lesson-list-toolbar .timetable-main-navigation {
-    flex-shrink: 0;
-  }
   .admin-money {
     text-align: right;
     font-variant-numeric: tabular-nums;
@@ -1000,12 +987,6 @@
   }
   .admin-lesson-roster .menu-panel-heading > :last-child {
     margin-inline-start: auto;
-  }
-}
-
-@media (max-width: 1199px) {
-  .admin-lesson-list-toolbar .timetable-main-controls {
-    flex-wrap: wrap;
   }
 }
 

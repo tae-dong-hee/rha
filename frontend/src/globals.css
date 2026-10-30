@@ -176,6 +176,10 @@
   }
   html {
     font-family: "Pretendard Variable", Pretendard, sans-serif;
+    scrollbar-gutter: stable;
+  }
+  body[data-scroll-locked] {
+    margin-right: 0 !important;
   }
 }
 :root {
@@ -599,6 +603,10 @@
   --timetable-mobile-height: 32rem;
   --timetable-hour-height: 5.25rem;
   --timetable-member-hour-height: 5.25rem;
+  --timetable-fit-hour-min: 36px;
+  --timetable-fit-hour-max: 84px;
+  --timetable-fit-bottom-gap: 16px;
+  --timetable-fit-compact-at: 60px;
   --timetable-standard-hours: 12;
   --timetable-header-height: 2.5rem;
   --timetable-time-width: 3.5rem;
