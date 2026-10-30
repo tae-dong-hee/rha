@@ -641,6 +641,7 @@ export interface Notification {
      * - ABSENCE_REQUESTED: 강사가 부재를 신청함 (관리자에게 발송)
      * - ABSENCE_APPROVED: 부재가 승인됨 (신청한 강사에게 발송)
      * - ABSENCE_REJECTED: 부재가 반려됨 (신청한 강사에게 발송)
+     * - ABSENCE_CANCELED: 관리자가 승인된 부재를 취소함 (신청한 강사에게 발송)
      *
      * 알림은 원인이 되는 처리와 같은 트랜잭션으로 생성된다. 수신 대상은 다음과 같다.
      * - LESSON_CANCELED: 취소된 수업의 예약(`RESERVED`)을 가진 회원. `relatedType`은 LESSON이다.
@@ -649,6 +650,7 @@ export interface Notification {
      * - RESERVATION_CANCELED_BY_MEMBER: 활동 중인(`ACTIVE`) 모든 관리자. `relatedType`은 LESSON이고 `relatedId`는 취소된 예약의 수업 ID이다 (관리자는 수업 상세의 예약자 목록에서 취소 내역을 확인한다).
      * - ABSENCE_REQUESTED: 활동 중인(`ACTIVE`) 모든 관리자. `relatedType`은 ABSENCE이다.
      * - ABSENCE_APPROVED, ABSENCE_REJECTED: 부재를 신청한 강사. `relatedType`은 ABSENCE이다.
+     * - ABSENCE_CANCELED: 관리자가 승인된 부재를 취소한 경우 신청한 강사. `relatedType`은 ABSENCE이다.
      * 날짜와 시각은 센터 현지 시각(Asia/Seoul)으로 표기한다.
      */
   type: string;
@@ -11271,7 +11273,7 @@ export const getCancelAbsenceUrl = (absenceId: number,) => {
 /**
  * 신청한 강사 본인 또는 관리자만 가능하다. `CANCELED`로 바뀌며 배정 금지도 풀린다.
  * - 강사 본인은 승인 전(`REQUESTED`)에만 철회할 수 있다. 승인된(`APPROVED`) 부재를 강사가 취소하려 하면 403 (PERMISSION_DENIED).
- * - 관리자는 `REQUESTED`와 `APPROVED` 모두 취소할 수 있다. 승인 때 자동으로 취소된 수업은 되살아나지 않는다.
+ * - 관리자는 `REQUESTED`와 `APPROVED` 모두 취소할 수 있다. 승인된(`APPROVED`) 부재를 취소하면 신청한 강사에게 승인 취소 인앱 알림(`ABSENCE_CANCELED`)이 발송된다. 승인 때 자동으로 취소된 수업은 되살아나지 않는다.
  * - 그 외 상태이면 409 (INVALID_ABSENCE_STATUS)
  * - 다른 강사의 부재이면 404
  * - 확인 순서: 없는 부재이거나 관리자와 신청한 강사가 아니면 404 → 강사가 승인된 부재를 취소하면 403 (PERMISSION_DENIED) → 상태 409 (INVALID_ABSENCE_STATUS).

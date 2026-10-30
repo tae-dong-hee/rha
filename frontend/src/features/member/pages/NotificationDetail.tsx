@@ -63,6 +63,7 @@ export const notificationCategories: Record<string, string> = {
   ABSENCE_REQUESTED: "부재 신청",
   ABSENCE_APPROVED: "부재 승인",
   ABSENCE_REJECTED: "부재 반려",
+  ABSENCE_CANCELED: "부재 승인 취소",
   LESSON_CANCELED: "수업 취소",
   RESERVATION_CANCELED: "예약 취소",
   RESERVATION_CREATED_BY_MEMBER: "회원 예약",

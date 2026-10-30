@@ -239,6 +239,9 @@ public class AbsenceService {
         }
         AbsenceStatus beforeStatus = absence.getStatus();
         absence.cancel(callerId, Instant.now());
+        if (admin && beforeStatus == AbsenceStatus.APPROVED) {
+            notificationPublisher.absenceCanceled(absence);
+        }
         activityLogRecorder.record(ActivityAction.ABSENCE_CANCELED, callerId, absence.getInstructorId(), "ABSENCE",
                 absence.getId(), "부재(" + ActivityTime.period(absence.getStartAt(), absence.getEndAt())
                         + ") 취소",

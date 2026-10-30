@@ -89,6 +89,11 @@ public class NotificationPublisher {
                 period(absence) + " 부재 신청이 승인되었습니다.", "ABSENCE", absence.getId());
     }
 
+    public void absenceCanceled(Absence absence) {
+        send(absence.getInstructorId(), "ABSENCE_CANCELED", "부재 승인이 취소되었습니다",
+                period(absence) + " 부재 승인이 관리자에 의해 취소되었습니다.", "ABSENCE", absence.getId());
+    }
+
     public void absenceRejected(Absence absence) {
         String reason = absence.getRejectReason();
         String message = period(absence) + " 부재 신청이 반려되었습니다."

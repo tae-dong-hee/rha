@@ -259,6 +259,40 @@ class NotificationDispatchTest extends ApiTestSupport {
     }
 
     @Test
+    void 관리자가_승인한_부재를_취소하면_강사에게_승인_취소_알림이_생긴다() throws Exception {
+        long absenceId = insertAbsence("REQUESTED");
+        send("/absences/" + absenceId + "/approvals", admin, null).andExpect(status().isOk());
+
+        send("/absences/" + absenceId + "/cancellations", admin, null).andExpect(status().isOk());
+
+        List<Map<String, Object>> rows = notificationsOf(instructorId);
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).get("type")).isEqualTo("ABSENCE_APPROVED");
+        Map<String, Object> canceled = rows.get(1);
+        assertThat(canceled.get("type")).isEqualTo("ABSENCE_CANCELED");
+        assertThat(canceled.get("title")).isEqualTo("부재 승인이 취소되었습니다");
+        assertThat((String) canceled.get("message")).contains("부재 승인이 관리자에 의해 취소되었습니다");
+        assertThat(canceled.get("related_type")).isEqualTo("ABSENCE");
+        assertThat(canceled.get("related_id")).isEqualTo(absenceId);
+        assertThat(canceled.get("read_at")).isNull();
+
+        send("/absences/" + absenceId + "/cancellations", admin, null).andExpect(status().isConflict());
+        assertThat(notificationsOf(instructorId)).hasSize(2);
+    }
+
+    @Test
+    void 승인_전_부재_취소에는_승인_취소_알림이_생기지_않는다() throws Exception {
+        long adminCanceled = insertAbsence("REQUESTED");
+        long instructorCanceled = insertAbsence("REQUESTED");
+
+        send("/absences/" + adminCanceled + "/cancellations", admin, null).andExpect(status().isOk());
+        send("/absences/" + instructorCanceled + "/cancellations", login("i@example.com"), null)
+                .andExpect(status().isOk());
+
+        assertThat(notificationsOf(instructorId)).isEmpty();
+    }
+
+    @Test
     void 부재를_반려하면_사유와_함께_강사에게_알림이_생긴다() throws Exception {
         long absenceId = insertAbsence("REQUESTED");
 
