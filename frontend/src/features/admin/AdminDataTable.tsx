@@ -20,6 +20,7 @@ export function DataTable<T extends { id: number }>({
   action,
   description,
   empty = "조회 결과가 없습니다",
+  emptyDescription = "조회 조건을 변경하거나 새 항목을 등록해 주세요.",
   paginate = true,
   selectedId,
   onRowClick,
@@ -38,6 +39,7 @@ export function DataTable<T extends { id: number }>({
   action?: ReactNode;
   description?: ReactNode;
   empty?: string;
+  emptyDescription?: string;
   paginate?: boolean;
   selectedId?: number | null;
   onRowClick?: (row: T) => void;
@@ -135,7 +137,7 @@ export function DataTable<T extends { id: number }>({
       ) : (
         <MenuEmpty
           title={empty}
-          description="조회 조건을 변경하거나 새 항목을 등록해 주세요."
+          description={emptyDescription}
         />
       )}
     </MenuPanel>

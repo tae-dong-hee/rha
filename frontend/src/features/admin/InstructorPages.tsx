@@ -1,4 +1,11 @@
-import { useAllMembers, useAllInstructors, useAllRooms, useAllAbsences } from "./queries";
+import {
+  useAllMembers,
+  useAllInstructors,
+  useAllRooms,
+  useAllAbsences,
+  useAllLessons,
+} from "./queries";
+import { overlappingLessons } from "./absenceLessons";
 import { sortAbsences } from "./absenceOrder";
 import { assertLessonTime, lessonTimeField } from "./LessonTimeField";
 import { todayInSeoul } from "@/api/runtime";
@@ -170,17 +177,15 @@ export function AbsenceDetail({ id, onNavigate }: { id: number; onNavigate: Navi
   const instructors = useAllInstructors({ size: 100 }),
     rooms = useAllRooms({ size: 100 }),
     updateLesson = api.useUpdateLesson();
-  const [action, setAction] = useState<Action | null>(null),
-    [page, setPage] = useState(1);
+  const [action, setAction] = useState<Action | null>(null);
   const a = query.data;
   // No lower start bound: a class that starts before the absence may still overlap.
-  const lessons = api.useGetLessons(
-    { instructorId: a?.instructor.id, to: a?.endAt, page, size: PAGE_SIZE },
-    { query: { enabled: !!a } },
+  // Filter all server pages before the table calculates its own pages and total.
+  const lessons = useAllLessons(
+    { instructorId: a?.instructor.id, to: a?.endAt, order: "ASC" },
+    !!a,
   );
-  const rows = (lessons.data?.content ?? []).filter(
-    (l) => a && l.endAt > a.startAt && l.status !== "CANCELED",
-  );
+  const rows = a ? overlappingLessons(lessons.data?.content ?? [], a) : [];
   const openLessonAdjustment = (lesson: api.Lesson) =>
     setAction({
       title: `${lesson.title} · 수업 조정`,
@@ -347,10 +352,10 @@ export function AbsenceDetail({ id, onNavigate }: { id: number; onNavigate: Navi
             <h2>겹치는 수업</h2>
             <QueryState query={lessons}>
               <DataTable
+                key={id}
                 rows={rows}
-                pageInfo={lessons.data?.pageInfo}
-                onPage={setPage}
-                empty="이 페이지에 겹치는 수업이 없습니다"
+                empty="부재 기간과 겹치는 수업이 없습니다"
+                emptyDescription="해당 강사의 취소되지 않은 수업을 기준으로 확인했습니다."
                 columns={[
                   { label: "수업", render: (l) => l.title },
                   { label: "시작", render: (l) => dateTime(l.startAt) },
