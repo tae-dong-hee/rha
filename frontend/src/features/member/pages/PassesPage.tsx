@@ -6,6 +6,9 @@ import { MenuEmpty, MenuPanel } from "@/components/layout/MenuPanel";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PassUsage } from "@/features/member/PassUsage";
+import { useAllMyReservations } from "@/features/admin/queries";
+import { DataTable, QueryState, dateTime } from "@/features/admin/AdminUI";
+import { passReservationHistory } from "@/features/member/passReservationHistory";
 
 export const passUsage = (pass: Pass) => ({
   name: pass.passProduct.name,
@@ -97,6 +100,8 @@ export function PassDetailPage({ passId, onBack }: { passId: number; onBack: () 
   const query = useGetMyPasses({ page, size: 100 });
   const pass = query.data?.content.find((item) => item.id === passId);
   const lastPage = query.data?.pageInfo.totalPages ?? 1;
+  const reservations = useAllMyReservations({}, !!pass);
+  const history = passReservationHistory(reservations.data?.content ?? [], passId);
 
   useEffect(() => {
     if (query.data && !pass && page < lastPage) setPage(page + 1);
@@ -135,15 +140,39 @@ export function PassDetailPage({ passId, onBack }: { passId: number; onBack: () 
               </p>
             </div>
           </MenuPanel>
-          <MenuPanel
-            variant="table"
-            title="횟수 차감·복구 내역"
-          >
-            <MenuEmpty
-              title="이용 내역을 표시할 수 없습니다"
-              description="현재는 총 횟수와 남은 횟수를 확인할 수 있습니다."
+          <QueryState query={reservations}>
+            <DataTable
+              key={passId}
+              title="예약·출결 및 횟수 내역"
+              rows={history}
+              empty="이 이용권으로 예약한 내역이 없습니다"
+              emptyDescription="수업을 예약하면 차감 내역과 출결 상태를 확인할 수 있습니다."
+              columns={[
+                { label: "처리 일시", render: (event) => dateTime(event.occurredAt) },
+                { label: "수업", render: (event) => event.reservation.lesson.title },
+                {
+                  label: "수업 일시",
+                  render: (event) => dateTime(event.reservation.lesson.startAt),
+                },
+                { label: "내역", render: (event) => event.label },
+                { label: "횟수 처리", render: (event) => (event.change > 0 ? "복구" : "−1회") },
+                {
+                  label: "현재 예약 상태",
+                  render: (event) => (
+                    <StatusBadge
+                      domain="reservation"
+                      status={event.reservation.status}
+                    />
+                  ),
+                },
+              ]}
             />
-          </MenuPanel>
+            <p className="menu-note">
+              예약 시 1회 차감되고 취소 시 총 횟수 한도 내에서 최대 1회 복구됩니다. 출석·노쇼는 추가
+              차감되지 않습니다. 이 목록은 예약 내역 기준이며, 관리자 횟수 조정 내역은 포함하지
+              않습니다.
+            </p>
+          </QueryState>
         </>
       ) : (
         <MenuEmpty
