@@ -19,6 +19,65 @@
     justify-content: flex-end;
     align-items: center;
     min-width: 0;
+    flex-wrap: wrap;
+    gap: var(--space-detail);
+  }
+  .admin-table-description {
+    flex: 1 1 var(--admin-filter-search-width);
+    color: var(--muted-foreground);
+    font-size: var(--font-size-caption);
+    line-height: 1.7;
+  }
+  .admin-table-toolbar > [data-slot="button"] {
+    flex-shrink: 0;
+  }
+  .admin-pass-history.menu-tabs {
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-panel);
+    background: var(--card);
+    overflow: hidden;
+  }
+  .admin-pass-history.menu-tabs > [data-slot="tabs-list"] {
+    width: 100%;
+    justify-content: flex-start;
+    gap: var(--space-detail);
+    padding: 0 var(--panel-padding);
+    border-radius: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+    overflow-x: auto;
+  }
+  .admin-pass-history.menu-tabs > [data-slot="tabs-list"] > [data-slot="tabs-trigger"] {
+    flex: 0 0 auto;
+    min-height: var(--table-header-height);
+    padding-inline: var(--space-detail);
+    border-radius: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .admin-pass-history.menu-tabs > [data-slot="tabs-list"] > [data-state="active"] {
+    color: var(--primary);
+    font-weight: var(--font-weight-heading);
+  }
+  .admin-pass-history.menu-tabs > [data-slot="tabs-list"] > [data-slot="tabs-trigger"]::after {
+    bottom: 0;
+    background: var(--primary);
+  }
+  .admin-pass-history > [data-slot="tabs-content"] {
+    min-width: 0;
+    padding: var(--panel-padding);
+  }
+  @media (max-width: 767px) {
+    .admin-pass-history.menu-tabs > [data-slot="tabs-list"] {
+      gap: 0;
+      padding-inline: var(--space-control);
+    }
+    .admin-pass-history.menu-tabs > [data-slot="tabs-list"] > [data-slot="tabs-trigger"] {
+      flex: 1 0 auto;
+      padding-inline: var(--space-control);
+    }
   }
   .admin-page-size[data-slot="select-trigger"] {
     width: auto;
