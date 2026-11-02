@@ -2,6 +2,9 @@
   .admin-page {
     min-width: 0;
   }
+  .admin-settlement-history {
+    min-width: 0;
+  }
   .admin-page:has(> .admin-table-area, > .menu-stack > .admin-table-area),
   .admin-page > .menu-stack:has(> .admin-table-area),
   .admin-table-area {

@@ -258,7 +258,102 @@ export function SettlementDetail({ id, onNavigate }: { id: number; onNavigate: N
       <QueryState query={query}>
         {s && (
           <>
-            <MenuPanel title="정산 요약">
+            <MenuPanel
+              title="정산 요약"
+              footer={
+                ["CALCULATED", "REVIEW_REQUESTED", "CONFIRMED"].includes(s.status) && (
+                  <div
+                    className="menu-actions"
+                    role="group"
+                    aria-label="정산 처리"
+                  >
+                    {s.status === "CALCULATED" && (
+                      <Button
+                        onClick={() =>
+                          setAction({
+                            title: "정산 검토 요청",
+                            description: "계산 결과를 관리자 내부 검토 단계로 변경합니다.",
+                            submitLabel: "검토 요청",
+                            onSubmit: () => review.mutateAsync({ settlementId: id }),
+                          })
+                        }
+                      >
+                        검토 요청
+                      </Button>
+                    )}
+                    {s.status === "REVIEW_REQUESTED" && (
+                      <Button
+                        onClick={() =>
+                          setAction({
+                            title: "정산 확정",
+                            description: `${money(s.totalAmount)}을 확정합니다. 확정 후에는 금액 변경과 폐기가 불가능합니다.`,
+                            submitLabel: "정산 확정",
+                            danger: true,
+                            onSubmit: () => confirm.mutateAsync({ settlementId: id }),
+                          })
+                        }
+                      >
+                        정산 확정
+                      </Button>
+                    )}
+                    {s.status === "CONFIRMED" && (
+                      <Button
+                        onClick={() =>
+                          setAction({
+                            title: "외부 지급 기록",
+                            description: `확정 금액 ${money(s.totalAmount)} 전액을 지급한 사실을 기록합니다. 실제 송금은 수행하지 않습니다.`,
+                            submitLabel: "지급 사실 기록",
+                            danger: true,
+                            fields: [
+                              {
+                                name: "paidAt",
+                                label: "실제 지급일",
+                                type: "date",
+                                required: true,
+                                max: todayInSeoul(),
+                              },
+                              { name: "memo", label: "지급 메모", type: "textarea" },
+                            ],
+                            initial: { paidAt: todayInSeoul() },
+                            onSubmit: (v) =>
+                              payment.mutateAsync({
+                                settlementId: id,
+                                data: {
+                                  paidAt: textValue(v, "paidAt"),
+                                  memo: textValue(v, "memo"),
+                                },
+                              }),
+                          })
+                        }
+                      >
+                        지급 사실 기록
+                      </Button>
+                    )}
+                    {["CALCULATED", "REVIEW_REQUESTED"].includes(s.status) && (
+                      <Button
+                        variant="destructive"
+                        onClick={() =>
+                          setAction({
+                            title: "정산 폐기",
+                            description:
+                              "정산을 폐기하면 출결을 정정하고 같은 기간을 다시 계산할 수 있습니다.",
+                            submitLabel: "정산 폐기",
+                            submitVariant: "destructive",
+                            danger: true,
+                            onSubmit: async () => {
+                              await discard.mutateAsync({ settlementId: id });
+                              onNavigate("admin-instructor-settlements", s.instructor.id);
+                            },
+                          })
+                        }
+                      >
+                        폐기·재계산
+                      </Button>
+                    )}
+                  </div>
+                )
+              }
+            >
               <Facts
                 items={[
                   ["강사", s.instructor.name],
@@ -278,91 +373,9 @@ export function SettlementDetail({ id, onNavigate }: { id: number; onNavigate: N
                 ]}
               />
             </MenuPanel>
-            <div className="menu-actions">
-              {s.status === "CALCULATED" && (
-                <Button
-                  onClick={() =>
-                    setAction({
-                      title: "정산 검토 요청",
-                      description: "계산 결과를 관리자 내부 검토 단계로 변경합니다.",
-                      submitLabel: "검토 요청",
-                      onSubmit: () => review.mutateAsync({ settlementId: id }),
-                    })
-                  }
-                >
-                  검토 요청
-                </Button>
-              )}
-              {s.status === "REVIEW_REQUESTED" && (
-                <Button
-                  onClick={() =>
-                    setAction({
-                      title: "정산 확정",
-                      description: `${money(s.totalAmount)}을 확정합니다. 확정 후에는 금액 변경과 폐기가 불가능합니다.`,
-                      submitLabel: "정산 확정",
-                      danger: true,
-                      onSubmit: () => confirm.mutateAsync({ settlementId: id }),
-                    })
-                  }
-                >
-                  정산 확정
-                </Button>
-              )}
-              {s.status === "CONFIRMED" && (
-                <Button
-                  onClick={() =>
-                    setAction({
-                      title: "외부 지급 기록",
-                      description: `확정 금액 ${money(s.totalAmount)} 전액을 지급한 사실을 기록합니다. 실제 송금은 수행하지 않습니다.`,
-                      submitLabel: "지급 사실 기록",
-                      danger: true,
-                      fields: [
-                        {
-                          name: "paidAt",
-                          label: "실제 지급일",
-                          type: "date",
-                          required: true,
-                          max: todayInSeoul(),
-                        },
-                        { name: "memo", label: "지급 메모", type: "textarea" },
-                      ],
-                      initial: { paidAt: todayInSeoul() },
-                      onSubmit: (v) =>
-                        payment.mutateAsync({
-                          settlementId: id,
-                          data: { paidAt: textValue(v, "paidAt"), memo: textValue(v, "memo") },
-                        }),
-                    })
-                  }
-                >
-                  지급 사실 기록
-                </Button>
-              )}
-              {["CALCULATED", "REVIEW_REQUESTED"].includes(s.status) && (
-                <Button
-                  variant="destructive"
-                  onClick={() =>
-                    setAction({
-                      title: "정산 폐기",
-                      description:
-                        "정산을 폐기하면 출결을 정정하고 같은 기간을 다시 계산할 수 있습니다.",
-                      submitLabel: "정산 폐기",
-                      submitVariant: "destructive",
-                      danger: true,
-                      onSubmit: async () => {
-                        await discard.mutateAsync({ settlementId: id });
-                        onNavigate("admin-instructor-settlements", s.instructor.id);
-                      },
-                    })
-                  }
-                >
-                  폐기·재계산
-                </Button>
-              )}
-            </div>
             <Tabs
               defaultValue="items"
-              className="menu-tabs"
+              className="menu-tabs admin-settlement-history"
             >
               <TabsList>
                 <TabsTrigger value="items">수업별 정산 항목</TabsTrigger>
