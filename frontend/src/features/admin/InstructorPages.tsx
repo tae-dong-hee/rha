@@ -1,8 +1,9 @@
-import { useAllMembers, useAllInstructors, useAllRooms } from "./queries";
+import { useAllMembers, useAllInstructors, useAllRooms, useAllAbsences } from "./queries";
+import { sortAbsences } from "./absenceOrder";
 import { assertLessonTime, lessonTimeField } from "./LessonTimeField";
 import { todayInSeoul } from "@/api/runtime";
 import { PAGE_SIZE } from "@/components/ui/Pagination";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import * as api from "@/api/generated/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,16 +57,17 @@ export function AbsenceList({
   const [filters, setFilters] = useState<Values>({}),
     [page, setPage] = useState(1);
   const instructors = useAllMembers({ role: "INSTRUCTOR", size: 100 });
-  const query = api.useGetAbsences({
+  const query = useAllAbsences({
     instructorId:
       instructorId ??
       (filterValue(filters, "instructorId") ? Number(filters.instructorId) : undefined),
     status: filterValue(filters, "status") as api.AbsenceStatus | undefined,
     from: dayStart(textValue(filters, "from")),
     to: dayEnd(textValue(filters, "to")),
-    page,
-    size: PAGE_SIZE,
   });
+  const rows = useMemo(() => sortAbsences(query.data?.content ?? []), [query.data]);
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const visiblePage = Math.min(page, totalPages);
   return (
     <div className="menu-stack">
       <Filters
@@ -100,10 +102,16 @@ export function AbsenceList({
           setPage(1);
         }}
       />
+      <p className="menu-note">승인 대기 우선 · 부재 시작일 빠른 순</p>
       <QueryState query={query}>
         <DataTable
-          rows={query.data?.content ?? []}
-          pageInfo={query.data?.pageInfo}
+          rows={rows.slice((visiblePage - 1) * PAGE_SIZE, visiblePage * PAGE_SIZE)}
+          pageInfo={{
+            page: visiblePage,
+            size: PAGE_SIZE,
+            totalElements: rows.length,
+            totalPages,
+          }}
           onPage={setPage}
           columns={[
             { label: "강사", render: (r) => r.instructor.name },
