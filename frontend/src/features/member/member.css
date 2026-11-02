@@ -317,7 +317,7 @@
     padding-top: 0;
   }
   .member-reservations-page .menu-panel-table [data-slot="table-container"] {
-    max-height: none;
+    max-height: var(--table-scroll-max-height);
   }
   .member-reservations-page .menu-tabs,
   .member-reservations-page .menu-stack {

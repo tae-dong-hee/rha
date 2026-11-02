@@ -24,6 +24,7 @@ import { MenuEmpty, MenuPanel } from "@/components/layout/MenuPanel";
 import { Dialog } from "@/components/ui/Dialog";
 import type { DialogState } from "@/app/routes";
 import { Button } from "@/components/ui/button";
+import { PaginatedList } from "@/components/ui/PaginatedList";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
   Select,
@@ -642,6 +643,7 @@ function Schedule({
         >
           {view === "list" && !editing ? (
             <WeekLessonList
+              key={`${start}:${room}:${lessonType}:${instructor}:${scope}:${status}`}
               lessons={rows}
               selectedId={selectedId}
               onSelect={onSelect}
@@ -932,82 +934,86 @@ function WeekLessonList({
       title="이번 주 수업"
       action={<span className="timetable-list-count">{lessons.length}개</span>}
     >
-      <Table
-        variant="management"
-        aria-label="이번 주 수업 목록"
-        className="timetable-list-table"
-      >
-        <TableHeader>
-          <TableRow>
-            {["일시", "수업", "강사·룸", "예약", ...(showStatus ? ["상태"] : [])].map((label) => (
-              <TableHead key={label}>{label}</TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {[...lessons]
-            .sort((a, b) => a.startAt.localeCompare(b.startAt))
-            .map((lesson) => {
-              const day = dateInSeoul(lesson.startAt);
-              const weekday = weekdays[(new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7];
-              return (
-                <TableRow
-                  key={lesson.id}
-                  data-selected={selectedId === lesson.id}
-                  data-selectable="true"
-                  aria-selected={selectedId === lesson.id}
-                  tabIndex={0}
-                  onClick={() => onSelect(lesson.id)}
-                  onKeyDown={(event) => {
-                    if (
-                      event.target === event.currentTarget &&
-                      (event.key === "Enter" || event.key === " ")
-                    ) {
-                      event.preventDefault();
-                      onSelect(lesson.id);
-                    }
-                  }}
-                >
-                  <TableCell>
-                    <div className="timetable-list-primary">
-                      <strong>
-                        {day.slice(5).replace("-", ".")} ({weekday})
-                      </strong>
-                      <span>
-                        {timeInSeoul(lesson.startAt)}–
-                        {dateInSeoul(lesson.endAt) !== day ? "익일 " : ""}
-                        {timeInSeoul(lesson.endAt)}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="timetable-list-primary">
-                      <strong>{lesson.title}</strong>
-                      <span>{lesson.lessonType.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="timetable-list-primary">
-                      <strong>{lesson.instructor.name}</strong>
-                      <span>{lesson.room.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {lesson.reservedCount} / {lesson.capacity}명
-                  </TableCell>
-                  {showStatus && (
+      <PaginatedList items={[...lessons].sort((a, b) => a.startAt.localeCompare(b.startAt))}>
+        {(pageLessons) => (
+          <Table
+            variant="management"
+            aria-label="이번 주 수업 목록"
+            className="timetable-list-table"
+          >
+            <TableHeader>
+              <TableRow>
+                {["일시", "수업", "강사·룸", "예약", ...(showStatus ? ["상태"] : [])].map(
+                  (label) => (
+                    <TableHead key={label}>{label}</TableHead>
+                  ),
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageLessons.map((lesson) => {
+                const day = dateInSeoul(lesson.startAt);
+                const weekday = weekdays[(new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7];
+                return (
+                  <TableRow
+                    key={lesson.id}
+                    data-selected={selectedId === lesson.id}
+                    data-selectable="true"
+                    aria-selected={selectedId === lesson.id}
+                    tabIndex={0}
+                    onClick={() => onSelect(lesson.id)}
+                    onKeyDown={(event) => {
+                      if (
+                        event.target === event.currentTarget &&
+                        (event.key === "Enter" || event.key === " ")
+                      ) {
+                        event.preventDefault();
+                        onSelect(lesson.id);
+                      }
+                    }}
+                  >
                     <TableCell>
-                      <StatusBadge
-                        domain="lesson"
-                        status={lesson.status}
-                      />
+                      <div className="timetable-list-primary">
+                        <strong>
+                          {day.slice(5).replace("-", ".")} ({weekday})
+                        </strong>
+                        <span>
+                          {timeInSeoul(lesson.startAt)}–
+                          {dateInSeoul(lesson.endAt) !== day ? "익일 " : ""}
+                          {timeInSeoul(lesson.endAt)}
+                        </span>
+                      </div>
                     </TableCell>
-                  )}
-                </TableRow>
-              );
-            })}
-        </TableBody>
-      </Table>
+                    <TableCell>
+                      <div className="timetable-list-primary">
+                        <strong>{lesson.title}</strong>
+                        <span>{lesson.lessonType.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="timetable-list-primary">
+                        <strong>{lesson.instructor.name}</strong>
+                        <span>{lesson.room.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {lesson.reservedCount} / {lesson.capacity}명
+                    </TableCell>
+                    {showStatus && (
+                      <TableCell>
+                        <StatusBadge
+                          domain="lesson"
+                          status={lesson.status}
+                        />
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+      </PaginatedList>
     </MenuPanel>
   );
 }

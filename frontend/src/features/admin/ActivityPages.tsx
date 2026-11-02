@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const ACTIVITY_PAGE_SIZES = [20, 50, 100];
+const ACTIVITY_PAGE_SIZES = [PAGE_SIZE, 20, 50, 100];
 const moneyFields = new Set([
   "price",
   "amount",
