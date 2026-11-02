@@ -530,6 +530,15 @@
   .menu-panel > [data-slot="card-content"] {
     min-width: 0;
   }
+  .menu-panel-footer {
+    margin-top: auto;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: var(--space-control);
+    border-color: var(--border);
+    background: var(--muted);
+    padding: var(--space-detail) var(--panel-padding);
+  }
   .menu-list,
   .menu-stack {
     display: grid;
