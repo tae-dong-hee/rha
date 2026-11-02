@@ -273,7 +273,92 @@ export function PassDetail({ id, onNavigate }: { id: number; onNavigate: Navigat
         {p && (
           <>
             <div className="admin-detail-grid">
-              <MenuPanel title="잔여 횟수">
+              <MenuPanel
+                title="잔여 횟수"
+                footer={
+                  !refunded && (
+                    <div
+                      className="menu-actions"
+                      role="group"
+                      aria-label="이용권 관리"
+                    >
+                      <Button
+                        variant="outline"
+                        disabled={!instructors.data}
+                        onClick={() =>
+                          setAction({
+                            title: "이용권 조정",
+                            description: "잔여 횟수와 만료일, 담당 강사를 조정합니다.",
+                            submitLabel: "이용권 저장",
+                            fields: [
+                              {
+                                name: "remainingCount",
+                                label: "잔여 횟수",
+                                type: "number",
+                                required: true,
+                                min: 0,
+                                max: p.totalCount,
+                              },
+                              {
+                                name: "endDate",
+                                label: "만료일",
+                                type: "date",
+                                required: true,
+                                min: p.startDate,
+                              },
+                              {
+                                name: "instructorId",
+                                label: "담당 강사",
+                                type: "search",
+                                required: true,
+                                options: options(instructors.data?.content),
+                              },
+                            ],
+                            initial: {
+                              remainingCount: String(p.remainingCount),
+                              endDate: p.endDate,
+                              instructorId: String(p.instructor.id),
+                            },
+                            onSubmit: (v) =>
+                              update.mutateAsync({
+                                passId: id,
+                                data: {
+                                  remainingCount: numValue(v, "remainingCount"),
+                                  endDate: textValue(v, "endDate"),
+                                  instructorId: numValue(v, "instructorId"),
+                                },
+                              }),
+                          })
+                        }
+                      >
+                        횟수·기간·강사 조정
+                      </Button>
+                      {p.status !== "EXPIRED" && p.startDate < todayInSeoul() && (
+                        <Button
+                          variant="warning"
+                          onClick={() =>
+                            setAction({
+                              title: "이용권 만료 처리",
+                              description:
+                                "만료일을 서울 기준 어제로 변경합니다. 기존 예약과 결제는 자동으로 변경되지 않습니다.",
+                              submitLabel: "만료 처리",
+                              submitVariant: "warning",
+                              danger: true,
+                              onSubmit: () =>
+                                update.mutateAsync({
+                                  passId: id,
+                                  data: { endDate: yesterdayInSeoul() },
+                                }),
+                            })
+                          }
+                        >
+                          만료 처리
+                        </Button>
+                      )}
+                    </div>
+                  )
+                }
+              >
                 <div className="menu-stack">
                   <p className="admin-metric">
                     {p.remainingCount} / {p.totalCount}회
@@ -306,7 +391,64 @@ export function PassDetail({ id, onNavigate }: { id: number; onNavigate: Navigat
                   />
                 </div>
               </MenuPanel>
-              <MenuPanel title="결제 요약">
+              <MenuPanel
+                title="결제 요약"
+                footer={
+                  !refunded && (
+                    <div
+                      className="menu-actions"
+                      role="group"
+                      aria-label="이용권 환불"
+                    >
+                      <Button
+                        variant="destructive"
+                        disabled={p.paidAmount <= 0}
+                        onClick={() =>
+                          setAction({
+                            title: "이용권 환불",
+                            description:
+                              "환불한 금액과 날짜를 기록합니다. 실제 환불(카드 취소, 송금)은 따로 진행해 주세요. 진행 중·예정 홀딩은 해제되고 시작 전 수업의 예약은 자동 취소됩니다. 환불은 되돌릴 수 없습니다.",
+                            submitLabel: "환불 처리",
+                            submitVariant: "destructive",
+                            danger: true,
+                            fields: [
+                              {
+                                name: "amount",
+                                label: "환불 금액 (원)",
+                                type: "money",
+                                required: true,
+                                min: 1,
+                                max: p.paidAmount,
+                                description: `결제 금액 ${money(p.paidAmount)} 이하로 입력해 주세요. 일부만 돌려줄 수도 있습니다.`,
+                              },
+                              {
+                                name: "refundedAt",
+                                label: "환불일",
+                                type: "date",
+                                required: true,
+                                max: todayInSeoul(),
+                              },
+                              { name: "memo", label: "환불 메모", type: "textarea" },
+                            ],
+                            initial: { amount: String(p.paidAmount), refundedAt: todayInSeoul() },
+                            onSubmit: (v) =>
+                              refund.mutateAsync({
+                                passId: id,
+                                data: {
+                                  amount: numValue(v, "amount"),
+                                  refundedAt: textValue(v, "refundedAt"),
+                                  memo: textValue(v, "memo") || undefined,
+                                },
+                              }),
+                          })
+                        }
+                      >
+                        환불 처리
+                      </Button>
+                    </div>
+                  )
+                }
+              >
                 <Facts
                   items={[
                     ["발급 금액", money(p.price)],
@@ -330,129 +472,11 @@ export function PassDetail({ id, onNavigate }: { id: number; onNavigate: Navigat
                 />
               </MenuPanel>
             </div>
-            {refunded ? (
+            {refunded && (
               <p className="menu-note">
                 환불된 이용권입니다. 횟수·기간·강사 조정, 홀딩, 결제 기록을 할 수 없으며 되돌릴 수
                 없습니다.
               </p>
-            ) : (
-              <div className="menu-actions">
-                <Button
-                  variant="outline"
-                  disabled={!instructors.data}
-                  onClick={() =>
-                    setAction({
-                      title: "이용권 조정",
-                      description: "잔여 횟수와 만료일, 담당 강사를 조정합니다.",
-                      submitLabel: "이용권 저장",
-                      fields: [
-                        {
-                          name: "remainingCount",
-                          label: "잔여 횟수",
-                          type: "number",
-                          required: true,
-                          min: 0,
-                          max: p.totalCount,
-                        },
-                        {
-                          name: "endDate",
-                          label: "만료일",
-                          type: "date",
-                          required: true,
-                          min: p.startDate,
-                        },
-                        {
-                          name: "instructorId",
-                          label: "담당 강사",
-                          type: "search",
-                          required: true,
-                          options: options(instructors.data?.content),
-                        },
-                      ],
-                      initial: {
-                        remainingCount: String(p.remainingCount),
-                        endDate: p.endDate,
-                        instructorId: String(p.instructor.id),
-                      },
-                      onSubmit: (v) =>
-                        update.mutateAsync({
-                          passId: id,
-                          data: {
-                            remainingCount: numValue(v, "remainingCount"),
-                            endDate: textValue(v, "endDate"),
-                            instructorId: numValue(v, "instructorId"),
-                          },
-                        }),
-                    })
-                  }
-                >
-                  횟수·기간·강사 조정
-                </Button>
-                {p.status !== "EXPIRED" && p.startDate < todayInSeoul() && (
-                  <Button
-                    variant="warning"
-                    onClick={() =>
-                      setAction({
-                        title: "이용권 만료 처리",
-                        description:
-                          "만료일을 서울 기준 어제로 변경합니다. 기존 예약과 결제는 자동으로 변경되지 않습니다.",
-                        submitLabel: "만료 처리",
-                        submitVariant: "warning",
-                        danger: true,
-                        onSubmit: () =>
-                          update.mutateAsync({ passId: id, data: { endDate: yesterdayInSeoul() } }),
-                      })
-                    }
-                  >
-                    만료 처리
-                  </Button>
-                )}
-                <Button
-                  variant="destructive"
-                  disabled={p.paidAmount <= 0}
-                  onClick={() =>
-                    setAction({
-                      title: "이용권 환불",
-                      description:
-                        "환불한 금액과 날짜를 기록합니다. 실제 환불(카드 취소, 송금)은 따로 진행해 주세요. 진행 중·예정 홀딩은 해제되고 시작 전 수업의 예약은 자동 취소됩니다. 환불은 되돌릴 수 없습니다.",
-                      submitLabel: "환불 처리",
-                      submitVariant: "destructive",
-                      danger: true,
-                      fields: [
-                        {
-                          name: "amount",
-                          label: "환불 금액 (원)",
-                          type: "money",
-                          required: true,
-                          min: 1,
-                          max: p.paidAmount,
-                          description: `결제 금액 ${money(p.paidAmount)} 이하로 입력해 주세요. 일부만 돌려줄 수도 있습니다.`,
-                        },
-                        {
-                          name: "refundedAt",
-                          label: "환불일",
-                          type: "date",
-                          required: true,
-                          max: todayInSeoul(),
-                        },
-                        { name: "memo", label: "환불 메모", type: "textarea" },
-                      ],
-                      initial: { amount: String(p.paidAmount), refundedAt: todayInSeoul() },
-                      onSubmit: (v) =>
-                        refund.mutateAsync({
-                          passId: id,
-                          data: {
-                            amount: numValue(v, "amount"),
-                            refundedAt: textValue(v, "refundedAt"),
-                            memo: textValue(v, "memo") || undefined,
-                          },
-                        }),
-                    })
-                  }
-                >
-                  환불 처리
-                </Button>
-              </div>
             )}
             <Tabs
               defaultValue="payments"

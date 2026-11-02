@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { cva } from "class-variance-authority";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import "@/features/member/member.css";
 
@@ -22,12 +22,14 @@ const panelVariants = cva("menu-panel", {
 export function MenuPanel({
   title,
   action,
+  footer,
   children,
   variant = "default",
   className,
 }: {
   title?: string;
   action?: ReactNode;
+  footer?: ReactNode;
   children: ReactNode;
   variant?: "default" | "filter" | "lesson" | "closed" | "table" | "pass" | "settings";
   className?: string;
@@ -46,6 +48,7 @@ export function MenuPanel({
         </CardHeader>
       )}
       <CardContent>{children}</CardContent>
+      {footer && <CardFooter className="menu-panel-footer">{footer}</CardFooter>}
     </Card>
   );
 }
