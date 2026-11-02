@@ -83,9 +83,10 @@
   --table-row-height: 3.875rem;
   --table-action-width: 6.75rem;
   --table-action-height: 2rem;
-  --table-visible-rows: 7;
-  --table-scroll-max-height: calc(
-    var(--table-header-height) + var(--table-row-height) * var(--table-visible-rows) + 1px
+  --table-visible-rows: 8;
+  --table-scroll-max-height: min(
+    calc(var(--table-header-height) + var(--table-row-height) * var(--table-visible-rows) + 1px),
+    65dvh
   );
   --background: #f7f8f6;
   --foreground: #292e2b;

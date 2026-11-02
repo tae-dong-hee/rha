@@ -980,7 +980,7 @@
     min-height: auto;
   }
   .admin-lesson-roster .admin-table-area [data-slot="table-container"] {
-    max-height: none;
+    max-height: var(--table-scroll-max-height);
   }
   .admin-lesson-roster .menu-panel-heading {
     flex-wrap: wrap;

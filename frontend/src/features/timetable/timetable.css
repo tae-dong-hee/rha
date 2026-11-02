@@ -259,7 +259,7 @@
     min-width: 0;
   }
   .timetable-list-panel [data-slot="table-container"] {
-    max-height: none;
+    max-height: var(--table-scroll-max-height);
   }
   .timetable-list-table {
     min-width: 38rem;

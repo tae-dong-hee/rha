@@ -1,6 +1,6 @@
 @layer utilities {
   [data-slot="table-container"]:has(> .member-lessons-table) {
-    max-height: none;
+    max-height: var(--table-scroll-max-height);
   }
   .member-lessons-table [data-slot="table-head"],
   .member-lessons-table [data-slot="table-cell"] {

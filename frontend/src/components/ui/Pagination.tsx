@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 
-export const PAGE_SIZE = 5;
+export const PAGE_SIZE = 10;
 
 export function Pagination({
   total = 0,
