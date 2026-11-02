@@ -765,6 +765,17 @@ export const adminHandlers = [
             });
           result = { passProduct: row, affectedPassCount };
         } else result = row;
+      } else if (path === "/members/me/passes" && method === "GET") {
+        const session = authPreview.session;
+        if (!session) fail("UNAUTHORIZED", "로그인이 필요합니다.", 401);
+        const rows = db.passes.filter((pass) => pass.member.id === session!.id);
+        rows.filter((pass) => pass.status !== "REFUNDED").forEach(refreshPass);
+        result = page(
+          rows.filter((pass) =>
+            q.has("status") ? match("status", pass.status) : pass.status !== "REFUNDED",
+          ),
+          url,
+        );
       } else if (path === "/passes" && method === "GET") {
         let rows = db.passes.filter(
           (p) =>
