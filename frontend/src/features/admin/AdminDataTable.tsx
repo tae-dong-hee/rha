@@ -18,6 +18,7 @@ export function DataTable<T extends { id: number }>({
   pageInfo,
   onPage,
   action,
+  description,
   empty = "조회 결과가 없습니다",
   paginate = true,
   selectedId,
@@ -35,6 +36,7 @@ export function DataTable<T extends { id: number }>({
   pageInfo?: PageInfo;
   onPage?: (page: number) => void;
   action?: ReactNode;
+  description?: ReactNode;
   empty?: string;
   paginate?: boolean;
   selectedId?: number | null;
@@ -138,9 +140,14 @@ export function DataTable<T extends { id: number }>({
       )}
     </MenuPanel>
   );
-  return action || pageInfo || (paginate && localTotalPages > 1) ? (
+  return action || description || pageInfo || (paginate && localTotalPages > 1) ? (
     <div className="admin-table-area">
-      {action && <div className="admin-table-toolbar">{action}</div>}
+      {(action || description) && (
+        <div className="admin-table-toolbar">
+          {description && <p className="admin-table-description">{description}</p>}
+          {action}
+        </div>
+      )}
       {panel}
       {pageInfo ? (
         <Pagination

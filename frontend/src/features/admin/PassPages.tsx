@@ -480,9 +480,12 @@ export function PassDetail({ id, onNavigate }: { id: number; onNavigate: Navigat
             )}
             <Tabs
               defaultValue="payments"
-              className="menu-tabs"
+              className="menu-tabs admin-pass-history"
             >
-              <TabsList>
+              <TabsList
+                variant="line"
+                aria-label="이용권 내역"
+              >
                 <TabsTrigger value="payments">결제 내역</TabsTrigger>
                 <TabsTrigger value="pauses">홀딩 내역</TabsTrigger>
                 <TabsTrigger value="reservations">회원 예약·출결</TabsTrigger>
@@ -526,15 +529,12 @@ function PassPauses({ pass, onNavigate }: { pass: api.Pass; onNavigate: Navigate
     terminate = api.useTerminatePassPause();
   return (
     <div className="menu-stack">
-      <p className="menu-note">
-        홀딩은 설정된 날짜에 시작됩니다. 조기 해제 시 실제 홀딩 일수로 만료일을 다시 계산하며 취소된
-        예약은 회원 예약·출결 탭에서 확인해 주세요.
-      </p>
       <QueryState query={query}>
         <DataTable
           rows={query.data?.content ?? []}
           pageInfo={query.data?.pageInfo}
           onPage={setPage}
+          description="홀딩 기간과 처리 상태를 확인합니다. 조기 해제 시 실제 홀딩 일수에 맞춰 만료일이 조정됩니다."
           action={
             <Button
               disabled={pass.status === "EXPIRED" || pass.status === "REFUNDED"}
@@ -662,46 +662,46 @@ export function PaymentsList({
   const locked = pass?.status === "REFUNDED";
   return (
     <div className="menu-stack">
-      {pass
-        ? !locked && (
-            <p className="menu-note">
-              환불은 위의 &lsquo;환불 처리&rsquo;로 이용권 단위로 진행합니다. 결제 기록의 환불
-              표시는 이전 방식으로 남은 기록이며 해제만 할 수 있습니다.
-            </p>
-          )
-        : !memberId && (
-            <Filters
-              fields={[
-                { name: "from", label: "결제 시작일", type: "date" },
-                { name: "to", label: "결제 종료일", type: "date" },
-                {
-                  name: "method",
-                  label: "결제 수단",
-                  type: "select",
-                  options: [ALL, ...paymentMethods],
-                },
-                {
-                  name: "refunded",
-                  label: "환불 여부",
-                  type: "select",
-                  options: [
-                    ALL,
-                    { value: "true", label: "환불 기록" },
-                    { value: "false", label: "환불 없음" },
-                  ],
-                },
-              ]}
-              onApply={(v) => {
-                setFilters(v);
-                setPage(1);
-              }}
-            />
-          )}
+      {!pass && !memberId && (
+        <Filters
+          fields={[
+            { name: "from", label: "결제 시작일", type: "date" },
+            { name: "to", label: "결제 종료일", type: "date" },
+            {
+              name: "method",
+              label: "결제 수단",
+              type: "select",
+              options: [ALL, ...paymentMethods],
+            },
+            {
+              name: "refunded",
+              label: "환불 여부",
+              type: "select",
+              options: [
+                ALL,
+                { value: "true", label: "환불 기록" },
+                { value: "false", label: "환불 없음" },
+              ],
+            },
+          ]}
+          onApply={(v) => {
+            setFilters(v);
+            setPage(1);
+          }}
+        />
+      )}
       <QueryState query={query}>
         <DataTable
           rows={query.data?.content ?? []}
           pageInfo={query.data?.pageInfo}
           onPage={setPage}
+          description={
+            pass
+              ? locked
+                ? "환불 완료된 이용권의 결제 내역입니다."
+                : "받은 결제 내역을 기록하고 관리합니다. 환불은 상단 결제 요약에서 처리해 주세요."
+              : undefined
+          }
           action={
             pass ? (
               <Button
